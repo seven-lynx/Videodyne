@@ -333,6 +333,22 @@ async function backfillCovers(db, lib, budgetMs = 25000) {
   await Promise.all([worker(), worker(), worker(), worker()]);
 }
 
+/**
+ * One advert row, and the only error that may be swallowed is the one that means "we already have this
+ * file". A bare catch here also hid a read-only disk, a missing column and a full temporary directory,
+ * and the scan then finished as if every advert had been added. The duplicate is matched on SQLite's
+ * message, which names the unique column; `errcode` would discriminate just as cleanly but appears in
+ * neither the v22.13.0 nor the v24.18.1 `node:sqlite` documentation, and `engines` allows 22.13.
+ * Takes the prepared statement rather than the database, so the scan prepares once and a test can
+ * drive this without a database at all. Returns true when the row was added.
+ */
+export function insertAd(ins, title, source, file, duration, status, libraryId, kind) {
+  try { ins.run(title, source, file, duration, status, libraryId, kind); return true; } catch (e) {
+    if (/^UNIQUE constraint failed: ads\.source$/.test(String(e?.message))) return false;
+    throw e;
+  }
+}
+
 async function scanAdsLibrary(db, lib, progress) {
   const kind = { ads_tv: 'tv', ads_movies: 'movie', ads_idents: 'ident' }[lib.type] || 'all';
   db.prepare('UPDATE ads SET kind=? WHERE library_id=?').run(kind, lib.id);
@@ -357,7 +373,7 @@ async function scanAdsLibrary(db, lib, progress) {
       const f = files[i++];
       if (known.has(f)) { known.delete(f); continue; }
       const p = await probe(f);
-      try { ins.run(path.parse(f).name, f, f, p?.duration || 0, p ? 'ready' : 'error', lib.id, kind); progress.changed++; } catch { /* dup */ }
+      if (insertAd(ins, path.parse(f).name, f, f, p?.duration || 0, p ? 'ready' : 'error', lib.id, kind)) progress.changed++;
     }
   }));
   const removable = new Set(safeRemovals(db, lib, [...known.keys()], knownTotal, files.length, unreadable));

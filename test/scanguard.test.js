@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { safeRemovals } from '../src/scanner.js';
+import { safeRemovals, insertAd } from '../src/scanner.js';
 
 const fresh = () => {
   const db = new DatabaseSync(':memory:');
@@ -50,4 +50,31 @@ test('losing more than half of a sizeable library waits for confirmation', () =>
 test('small libraries can lose files without ceremony', () => {
   const db = fresh();
   assert.deepEqual(safeRemovals(db, lib, paths(3), 4, 1, []), paths(3));
+});
+
+test('an advert row reaches the statement in its column order', () => {
+  const seen = [];
+  const ins = { run: (...args) => seen.push(args) };
+  assert.equal(insertAd(ins, 'ep1', '/mnt/ads/ep1.mkv', '/mnt/ads/ep1.mkv', 30, 'ready', 7, 'tv'), true);
+  assert.deepEqual(seen, [['ep1', '/mnt/ads/ep1.mkv', '/mnt/ads/ep1.mkv', 30, 'ready', 7, 'tv']]);
+});
+
+test('a file already in the ads library is skipped, not thrown', () => {
+  const ins = { run: () => { throw Object.assign(new Error('UNIQUE constraint failed: ads.source'), { code: 'ERR_SQLITE_ERROR', errcode: 2067 }); } };
+  assert.equal(insertAd(ins, 'ep1', '/mnt/ads/ep1.mkv', '/mnt/ads/ep1.mkv', 30, 'ready', 7, 'tv'), false);
+});
+
+test('a NOT NULL breach is a real fault and reaches the caller', () => {
+  const ins = { run: () => { throw Object.assign(new Error('NOT NULL constraint failed: ads.source'), { code: 'ERR_SQLITE_ERROR', errcode: 1299 }); } };
+  assert.throws(() => insertAd(ins, 'ep1', null, null, 0, 'error', 7, 'tv'), /NOT NULL constraint failed: ads\.source/);
+});
+
+test('an error carrying no SQLite text at all reaches the caller', () => {
+  const ins = { run: () => { throw new Error('disk I/O error'); } };
+  assert.throws(() => insertAd(ins, 'ep1', '/mnt/ads/ep1.mkv', '/mnt/ads/ep1.mkv', 30, 'ready', 7, 'tv'), /disk I\/O error/);
+});
+
+test('a uniqueness fault on another ads column is not a duplicate either', () => {
+  const ins = { run: () => { throw new Error('UNIQUE constraint failed: ads.id'); } };
+  assert.throws(() => insertAd(ins, 'ep1', '/mnt/ads/ep1.mkv', '/mnt/ads/ep1.mkv', 30, 'ready', 7, 'tv'), /UNIQUE constraint failed: ads\.id/);
 });
