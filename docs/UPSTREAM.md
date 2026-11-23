@@ -36,6 +36,7 @@ reason beside it.
 | 2026-11-23 | `0468867` | upstream | Test the access gate: the 401 challenge, the three ways an API key is presented, the signed cookie and its expiry, and that deleting the password opens the app again | yes | candidate | #17 |
 | 2026-11-23 | `5fbc835` | upstream | Build the three columns that lived only in `migrate()` into `SCHEMA`, so a fresh database is correct without it; the ALTERs stay as the upgrade path | yes | candidate | #2 |
 | 2026-11-23 | `e473a8b` | upstream | Read the stream height once: the settings default comes from `cfg.height` instead of a second `process.env` read, so a documented knob cannot be outranked at import | yes | candidate | #11 |
+| 2026-11-23 | `80a0511` | upstream | Bind the channel and library ids in the two statements that built them into SQL text - a channel list inside `IN (...)` and a library id after `library_id=` - and drop a filter that is not a number instead of writing `NaN` into it | yes | candidate | #12 |
 
 ## How a row is added
 
