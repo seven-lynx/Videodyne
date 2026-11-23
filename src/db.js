@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS items (
   season INTEGER, episode INTEGER, aired TEXT, rating REAL, mpaa TEXT,
   runtime REAL DEFAULT 0, probed INTEGER DEFAULT 0,
   studios TEXT DEFAULT '[]', genres TEXT DEFAULT '[]', actors TEXT DEFAULT '[]',
-  poster TEXT, mtime REAL, size REAL, nfo_mtime REAL, channel_id INTEGER, artist TEXT, album TEXT
+  poster TEXT, mtime REAL, size REAL, nfo_mtime REAL, channel_id INTEGER, artist TEXT, album TEXT,
+  probe_attempts INTEGER DEFAULT 0, probe_checked REAL -- how many ffprobes failed on this file and when the last one ran
 );
 CREATE TABLE IF NOT EXISTS live_streams (
   id INTEGER PRIMARY KEY, library_id INTEGER NOT NULL REFERENCES libraries(id) ON DELETE CASCADE,
@@ -103,6 +104,9 @@ function migrate(db) {
   const icols = db.prepare('PRAGMA table_info(items)').all().map((c) => c.name);
   if (!icols.includes('artist')) db.exec('ALTER TABLE items ADD COLUMN artist TEXT');
   if (!icols.includes('album')) db.exec('ALTER TABLE items ADD COLUMN album TEXT');
+  // older DBs: a file ffprobe could not read, and when it was last tried -- so one failure is a retry, not a verdict
+  if (!icols.includes('probe_attempts')) db.exec('ALTER TABLE items ADD COLUMN probe_attempts INTEGER DEFAULT 0');
+  if (!icols.includes('probe_checked')) db.exec('ALTER TABLE items ADD COLUMN probe_checked REAL');
   // older DBs: blocks.promo_id (announcement slots)
   if (!db.prepare('PRAGMA table_info(blocks)').all().some((c) => c.name === 'promo_id')) db.exec('ALTER TABLE blocks ADD COLUMN promo_id INTEGER');
   if (!db.prepare('PRAGMA table_info(channels)').all().some((c) => c.name === 'grp')) db.exec('ALTER TABLE channels ADD COLUMN grp TEXT'); // the channel group its programmes come from (a chip in the guide)

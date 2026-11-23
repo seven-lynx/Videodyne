@@ -39,16 +39,31 @@ export async function probeTags(file) {
   } catch { return null; }
 }
 
+// A failed probe is retried, not written off: an unmounted share or a file still being copied is the
+// common case, and the old permanent `probed=2` never came back because nothing looked at it again.
+// Seconds to wait since the previous attempt, indexed by the number of failures already recorded;
+// past the last entry the file is given up and logged once.
+const RETRY = [0, 3600, 21600, 86400];
+
 /** Background fill-in of durations for items whose NFO had no durationinseconds. */
-export async function probePending(db, onProgress) {
-  const rows = db.prepare('SELECT id,path FROM items WHERE probed=0').all();
+export async function probePending(db, onProgress, { now = Date.now, probe: probeFn = probe, log = console.error } = {}) {
+  const at = Math.floor(now() / 1000); // seconds, the unit `probe_checked` is stored in
+  const rows = db.prepare('SELECT id,path,probed,probe_attempts,probe_checked FROM items WHERE probed IN (0,2)').all()
+    // never probed is always due; a failure waits its backoff, and a file already given up is not selected
+    .filter((r) => r.probed === 0 || (r.probe_attempts < RETRY.length && (r.probe_checked == null || at - r.probe_checked >= RETRY[r.probe_attempts])));
   let i = 0, done = 0;
-  const upd = db.prepare('UPDATE items SET runtime=?, probed=? WHERE id=?');
+  const ok = db.prepare('UPDATE items SET runtime=?, probed=1, probe_attempts=0, probe_checked=? WHERE id=?');
+  const bad = db.prepare('UPDATE items SET probed=2, probe_attempts=probe_attempts+1, probe_checked=? WHERE id=?');
   await Promise.all(Array.from({ length: 4 }, async () => {
     while (i < rows.length) {
       const r = rows[i++];
-      const p = await probe(r.path);
-      if (p && p.duration > 0) upd.run(p.duration, 1, r.id); else upd.run(0, 2, r.id);
+      const p = await probeFn(r.path);
+      if (p && p.duration > 0) ok.run(p.duration, at, r.id);
+      else {
+        // the runtime is left as it was: a duration from the NFO is a claim, and 0 would read as "measured, and empty"
+        bad.run(at, r.id);
+        if (r.probe_attempts + 1 >= RETRY.length) log(`probe: giving up on "${r.path}" after ${RETRY.length - 1} retries, ffprobe cannot read it`);
+      }
       onProgress?.(++done, rows.length);
     }
   }));
