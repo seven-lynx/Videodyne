@@ -30,7 +30,7 @@ reason beside it.
 
 | Date | Commit | Lane | What | Upstream | Status | Link |
 |---|---|---|---|---|---|---|
-| 2026-11-22 | - | upstream | Untrack `tools/__pycache__/*.pyc` and add the ignore rule | yes | candidate | - |
+| 2026-11-22 | `c1190be` | upstream | Untrack `tools/__pycache__/*.pyc` and add the ignore rule | yes | open | #3 |
 | 2026-11-22 | - | upstream | Hardware-encoder results from a real GPU, for the open help-wanted issue | yes | candidate | - |
 
 ## How a row is added
