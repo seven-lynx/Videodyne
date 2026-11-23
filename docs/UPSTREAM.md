@@ -37,6 +37,7 @@ reason beside it.
 | 2026-11-23 | `5fbc835` | upstream | Build the three columns that lived only in `migrate()` into `SCHEMA`, so a fresh database is correct without it; the ALTERs stay as the upgrade path | yes | candidate | #2 |
 | 2026-11-23 | `e473a8b` | upstream | Read the stream height once: the settings default comes from `cfg.height` instead of a second `process.env` read, so a documented knob cannot be outranked at import | yes | candidate | #11 |
 | 2026-11-23 | `80a0511` | upstream | Bind the channel and library ids in the two statements that built them into SQL text - a channel list inside `IN (...)` and a library id after `library_id=` - and drop a filter that is not a number instead of writing `NaN` into it | yes | candidate | #12 |
+| 2026-11-23 | `fb6cadf` | upstream | Treat only SQLite's unique violation on `ads.source` as a duplicate while scanning an ads library, so a failing insert reaches the scan result instead of being dropped as if the advert were already there | yes | candidate | #6 |
 
 ## How a row is added
 
