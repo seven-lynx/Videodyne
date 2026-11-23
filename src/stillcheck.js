@@ -22,22 +22,25 @@ export function judgeUpload(info = {}) {
 }
 
 /** How much of the picture changes: the fraction of sampled frame pairs that differ noticeably, from a window in the middle of the video. */
-export function motionOf(file, { ffmpeg = cfg.ffmpeg, start = null, duration = null } = {}) {
+export function motionOf(file, { ffmpeg = cfg.ffmpeg, ffprobe = cfg.ffprobe, start = null, duration = null, timeoutMs = 60000 } = {}) {
   return new Promise((resolve, reject) => {
     const sample = (ss) => new Promise((res, rej) => {
       const args = ['-v', 'error', '-nostdin', ...(ss > 0 ? ['-ss', String(ss)] : []), '-i', file, '-t', String(SECONDS), '-an', '-vf', `fps=${FPS},scale=${W}:${H},format=gray`, '-f', 'rawvideo', '-'];
       const p = spawn(ffmpeg, args, { stdio: ['ignore', 'pipe', 'ignore'] });
       const chunks = [];
       p.stdout.on('data', (d) => chunks.push(d));
-      p.on('error', rej);
-      p.on('close', () => res(Buffer.concat(chunks)));
-      setTimeout(() => p.kill('SIGKILL'), 60000);
+      const timer = setTimeout(() => p.kill('SIGKILL'), timeoutMs);
+      p.on('error', (e) => { clearTimeout(timer); rej(e); });
+      p.on('close', () => { clearTimeout(timer); res(Buffer.concat(chunks)); });
     });
-    const probe = spawn(cfg.ffprobe, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file], { stdio: ['ignore', 'pipe', 'ignore'] });
-    let out = '';
+    const probe = spawn(ffprobe, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file], { stdio: ['ignore', 'pipe', 'ignore'] });
+    let out = '', timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; probe.kill('SIGKILL'); }, timeoutMs);
     probe.stdout.on('data', (d) => (out += d));
-    probe.on('error', reject);
+    probe.on('error', (e) => { clearTimeout(timer); reject(e); });
     probe.on('close', async () => {
+      clearTimeout(timer);
+      if (timedOut) return reject(new Error(`ffprobe did not answer within ${timeoutMs} ms`)); // a wedged probe must not hang the download worker for ever
       try {
         const dur = parseFloat(out) || 0;
         const ss = start ?? Math.max(0, Math.min(dur * 0.3, Math.max(0, dur - SECONDS - 2)));

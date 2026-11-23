@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { judgeUpload, looksStill } from '../src/stillcheck.js';
+import { judgeUpload, looksStill, motionOf } from '../src/stillcheck.js';
 
 const haveFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
 
@@ -52,4 +52,33 @@ test('a file that cannot be judged is never rejected', async () => {
   const r = await looksStill(f);
   assert.equal(r.still, false);
   fs.rmSync(f, { force: true });
+});
+
+// node answers any argv with its version and exits, so it stands in for ffprobe and ffmpeg here:
+// the cases below are about the timers and the deadline, not about the picture.
+test('motionOf takes an injected ffprobe and clears every kill timer it arms', async () => {
+  const armed = new Set();
+  const realSet = globalThis.setTimeout, realClear = globalThis.clearTimeout;
+  let created = 0, cleared = 0;
+  globalThis.setTimeout = (fn, ms, ...rest) => {
+    const t = realSet(fn, ms, ...rest);
+    if (ms === 60000) { created++; armed.add(t); }
+    return t;
+  };
+  globalThis.clearTimeout = (t) => { if (armed.delete(t)) cleared++; return realClear(t); };
+  try {
+    await motionOf(path.join(os.tmpdir(), 'wbtv-still-timers.mp4'), { ffmpeg: process.execPath, ffprobe: process.execPath, timeoutMs: 60000 });
+  } finally {
+    globalThis.setTimeout = realSet;
+    globalThis.clearTimeout = realClear;
+  }
+  assert.equal(created, 2, 'one kill timer for the probe and one for the sample');
+  assert.equal(cleared, 2, 'both are cleared when their child closes, so neither holds the process');
+});
+
+test('a probe that has not answered by the deadline rejects instead of hanging', async () => {
+  await assert.rejects(
+    motionOf(path.join(os.tmpdir(), 'wbtv-still-wedged.mp4'), { ffprobe: process.execPath, timeoutMs: 0 }),
+    /ffprobe did not answer within 0 ms/,
+  );
 });
