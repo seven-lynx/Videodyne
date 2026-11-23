@@ -153,3 +153,42 @@ test('Emby still gets the old header and api_key, and is told apart from Jellyfi
     assert.equal(resolveMedia(db, 'ms://1/x'), 'http://emby:8096/Videos/x/stream?static=true&MediaSourceId=x&api_key=embykey');
   } finally { emby.close(); }
 });
+
+test('a series id an episode also uses gets its own cover, and the art already on disk keeps its name', async () => {
+  // one id in both namespaces: the server hands out the same string for a series and for an episode
+  const jelly = http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x');
+    const json = (o, code = 200) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(o)); };
+    if (u.pathname === '/System/Info/Public') return json({ ServerName: 'Collide', ProductName: 'Jellyfin Server', Version: '10.9.0' });
+    if (!/Token="goodkey"/.test(req.headers.authorization || '')) return json({}, 401);
+    if (u.pathname === '/Users') return json([{ Id: 'u1', Name: 'will', Policy: {} }]);
+    if (u.pathname === '/Users/u1/Views') return json({ Items: [{ Id: 'tvview', Name: 'Shows', CollectionType: 'tvshows' }] });
+    if (u.pathname === '/Users/u1/Items') {
+      const Items = u.searchParams.get('IncludeItemTypes') === 'Series'
+        ? [{ Id: 'x1', Name: 'Collided Show' }]
+        : [{ Id: 'x1', Name: 'The Episode', SeriesId: 'x1', ParentIndexNumber: 1, IndexNumber: 1, RunTimeTicks: 1800 * TICKS, DateLastSaved: '2024-01-01T00:00:00Z' }];
+      return json({ Items, TotalRecordCount: Items.length });
+    }
+    if (/^\/Items\/[^/]+\/Images\/Primary$/.test(u.pathname)) { res.writeHead(200, { 'content-type': 'image/jpeg' }); return res.end(Buffer.from([0xff, 0xd8, 0xff, 0xd9])); }
+    json({}, 404);
+  });
+  await new Promise((r) => jelly.listen(0, '127.0.0.1', r));
+  try {
+    const db = openDb(fs.mkdtempSync(path.join(dir, 'db-')));
+    db.prepare('INSERT INTO sources(kind,name,url,token,user_id) VALUES(?,?,?,?,?)').run('jellyfin', 'Collide', `http://127.0.0.1:${jelly.address().port}`, 'goodkey', 'u1');
+    const id = Number(db.prepare("INSERT INTO libraries(name,path,type) VALUES('Shows','ms://1/tvview','tv')").run().lastInsertRowid);
+    await run(db, id);
+    const show = db.prepare('SELECT poster FROM shows').get().poster;
+    const item = db.prepare("SELECT poster FROM items WHERE kind='episode'").get().poster;
+    assert.ok(show, 'the series got its picture');
+    assert.ok(item, 'the episode got its picture: the collision no longer routes both writes to the show');
+    assert.notEqual(show, item, 'the two namespaces keep one file each');
+    assert.ok(path.basename(show).includes('x1') && path.basename(item).includes('x1'), 'both names still carry the id');
+    assert.ok(fs.existsSync(show) && fs.existsSync(item));
+    assert.equal(fs.readdirSync(path.join(dir, 'covers')).filter((f) => f.includes('x1')).length, 2);
+    // a second scan finds both pictures and downloads nothing again
+    const again = { files: 0, changed: 0, dirs: 0 };
+    await scanLibrary(db, db.prepare('SELECT * FROM libraries WHERE id=?').get(id), again);
+    assert.equal(fs.readdirSync(path.join(dir, 'covers')).filter((f) => f.includes('x1')).length, 2);
+  } finally { jelly.close(); }
+});

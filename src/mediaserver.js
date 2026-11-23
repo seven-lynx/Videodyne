@@ -87,7 +87,10 @@ export function resolveMedia(db, p) {
 // ---- scanning -----------------------------------------------------------------------------------------------------------------
 const FIELDS = 'Overview,Genres,Studios,People,OfficialRating,CommunityRating,ProductionYear,PremiereDate,RunTimeTicks,DateLastSaved,SeriesId,SeriesName,ParentIndexNumber,IndexNumber,Artists,AlbumArtist,Album';
 const covers = () => path.join(cfg.configDir, 'covers');
-const coverFile = (srcId, id) => path.join(covers(), `ms_${srcId}_${String(id).replace(/[^\w-]/g, '')}.jpg`);
+// A cover is named by its source and its bare id, which is what every file already in covers/ is called; only an id the
+// server hands out in both namespaces gets the namespace in the name, because `~` cannot survive the sanitiser and so a
+// split name can never be mistaken for a bare one.
+const coverFile = (srcId, id, ns) => path.join(covers(), ns ? `ms_${srcId}_${ns}~${String(id).replace(/[^\w-]/g, '')}.jpg` : `ms_${srcId}_${String(id).replace(/[^\w-]/g, '')}.jpg`);
 const jsonArr = (a) => JSON.stringify(a || []);
 const secs = (ticks) => (Number(ticks) > 0 ? Number(ticks) / 1e7 : 0);
 const hash = (o) => parseInt(crypto.createHash('md5').update(JSON.stringify(o)).digest('hex').slice(0, 7), 16);
@@ -116,26 +119,30 @@ export async function scanMediaServer(db, lib, progress, { safeRemovals }) {
   const series = tv ? await pages(src, base + '&IncludeItemTypes=Series') : [];
   const items = await pages(src, base + `&IncludeItemTypes=${tv ? 'Episode' : mv ? 'MusicVideo' : 'Movie'}`);
   progress.files = items.length;
+  // the two id namespaces are separate on the server, but both are opaque strings, so an id cannot be trusted to belong to
+  // one: an id the server uses for a series and for an item is named with its namespace, and every other id keeps its name
+  const itemIds = new Set(items.map((it) => it.Id));
+  const doubled = new Set(series.filter((s) => itemIds.has(s.Id)).map((s) => s.Id));
 
   const existing = new Map(db.prepare('SELECT path,mtime,size FROM items WHERE library_id=?').all(lib.id).map((r) => [r.path, r]));
   const showIds = new Map();
   const selShow = db.prepare('SELECT id,title,plot,year,rating,mpaa,studios,genres,poster FROM shows WHERE path=?');
   const insShow = db.prepare('INSERT INTO shows(library_id,path,title,plot,year,rating,mpaa,studios,genres,poster) VALUES(?,?,?,?,?,?,?,?,?,?)');
   const updShow = db.prepare('UPDATE shows SET title=?,plot=?,year=?,rating=?,mpaa=?,studios=?,genres=?,poster=? WHERE id=?');
-  const poster = (id) => (fs.existsSync(coverFile(src.id, id)) ? coverFile(src.id, id) : null);
-  const want = []; // art still to download
+  const poster = (ns, id) => { const f = coverFile(src.id, id, doubled.has(id) ? ns : null); return fs.existsSync(f) ? f : null; };
+  const want = []; // art still to download, as series:<id> or item:<id>
 
   tx(db, () => {
     for (const s of series) {
       const p = `ms://${src.id}/${s.Id}`;
-      const row = [s.Name || '', s.Overview || '', s.ProductionYear ?? null, s.CommunityRating ?? null, s.OfficialRating || '', jsonArr((s.Studios || []).map((x) => x.Name)), jsonArr(s.Genres), poster(s.Id)];
+      const row = [s.Name || '', s.Overview || '', s.ProductionYear ?? null, s.CommunityRating ?? null, s.OfficialRating || '', jsonArr((s.Studios || []).map((x) => x.Name)), jsonArr(s.Genres), poster('series', s.Id)];
       const ex = selShow.get(p);
       if (ex) {
         const now = [ex.title, ex.plot, ex.year, ex.rating, ex.mpaa, ex.studios, ex.genres, ex.poster];
         if (row.some((v, i) => (v ?? null) !== (now[i] ?? null))) progress.changed++;
         updShow.run(...row, ex.id); showIds.set(s.Id, ex.id);
       } else { progress.changed++; showIds.set(s.Id, Number(insShow.run(lib.id, p, ...row).lastInsertRowid)); }
-      if (!poster(s.Id)) want.push(s.Id);
+      if (!poster('series', s.Id)) want.push(`series:${s.Id}`);
     }
   });
 
@@ -164,8 +171,8 @@ export async function scanMediaServer(db, lib, progress, { safeRemovals }) {
       const sig = hash([meta, runtime, artist, album]);
       const mtime = Date.parse(it.DateLastSaved || '') || 0;
       const ex = existing.get(p);
-      const art = poster(it.Id);
-      if (!art) want.push(it.Id);
+      const art = poster('item', it.Id);
+      if (!art) want.push(`item:${it.Id}`);
       if (ex && ex.mtime === mtime && ex.size === sig) { if (art) setPoster.run(art, p); continue; }
       progress.changed++;
       upsert.run(lib.id, show, tv ? 'episode' : mv ? 'musicvideo' : 'movie', p, meta.title, meta.plot, meta.year, meta.season, meta.episode, meta.aired, meta.rating, meta.mpaa, runtime,
@@ -177,26 +184,27 @@ export async function scanMediaServer(db, lib, progress, { safeRemovals }) {
   if (gone.length) { const del = db.prepare('DELETE FROM items WHERE path=?'); tx(db, () => { for (const p of gone) del.run(p); }); progress.removed = (progress.removed || 0) + gone.length; }
   db.prepare('DELETE FROM shows WHERE library_id=? AND id NOT IN (SELECT DISTINCT show_id FROM items WHERE show_id IS NOT NULL)').run(lib.id);
   db.prepare('UPDATE libraries SET last_scan=? WHERE id=?').run(Date.now(), lib.id);
-  await fetchArt(db, src, lib, want, tv ? series : []); // bounded: a big library fills in over a few scans
+  await fetchArt(db, src, lib, want, doubled); // bounded: a big library fills in over a few scans
 }
 
 /** Pictures: downloaded once into the config folder (a few hundred per scan, so a big library fills in without a burst of requests). */
-async function fetchArt(db, src, lib, ids, seriesList, max = 300) {
+async function fetchArt(db, src, lib, keys, doubled, max = 300) {
   fs.mkdirSync(covers(), { recursive: true });
-  const todo = [...new Set(ids)].slice(0, max);
+  const todo = [...new Set(keys)].slice(0, max);
   const setItem = db.prepare('UPDATE items SET poster=? WHERE path=? AND library_id=?');
   const setShow = db.prepare('UPDATE shows SET poster=? WHERE path=? AND library_id=?');
-  const isSeries = new Set(seriesList.map((s) => s.Id));
   let i = 0;
   await Promise.all(Array.from({ length: 4 }, async () => {
     while (i < todo.length) {
-      const id = todo[i++];
+      const key = todo[i++];
+      const cut = key.indexOf(':');
+      const ns = key.slice(0, cut), id = key.slice(cut + 1); // the key says which row the picture belongs to
       try {
         const buf = await api(src, `/Items/${encodeURIComponent(id)}/Images/Primary?maxHeight=450&quality=85`, { binary: true, timeout: 20000 });
         if (!buf.length) continue;
-        const f = coverFile(src.id, id);
+        const f = coverFile(src.id, id, doubled.has(id) ? ns : null);
         fs.writeFileSync(f, buf);
-        (isSeries.has(id) ? setShow : setItem).run(f, `ms://${src.id}/${id}`, lib.id);
+        (ns === 'series' ? setShow : setItem).run(f, `ms://${src.id}/${id}`, lib.id);
       } catch { /* no picture for this one; try again on a later scan */ }
     }
   }));
