@@ -9,10 +9,10 @@ import path from 'node:path';
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-nd-'));
 process.env.WBTV_CONFIG = dir;
 const { openDb } = await import('../src/db.js');
-const { scanLibrary } = await import('../src/scanner.js');
+const { scanLibrary, safeRemovals } = await import('../src/scanner.js');
 const { inferChannels } = await import('../src/channels.js');
 const { normalizeUrl, resolveMedia } = await import('../src/mediaserver.js');
-const { subsonicDiscover, fetchLyrics } = await import('../src/navidrome.js');
+const { subsonicDiscover, fetchLyrics, scanNavidrome } = await import('../src/navidrome.js');
 
 // a tiny Navidrome: password "secret", one folder, 600 songs on 3 albums (so the 500-per-page paging is exercised)
 const PASSWORD = 'secret';
@@ -131,4 +131,121 @@ test('lyrics come from the server: synced, plain, or none', async () => {
   assert.deepEqual(synced.synced.map((l) => [l.t, l.text]), [[1, 'First line'], [5.5, 'Second line']]);
   assert.deepEqual(await fetchLyrics(src, 's2'), { text: 'Plain one\nPlain two' });
   assert.equal(await fetchLyrics(src, 's3'), null);
+});
+
+// ---- the album walk: a server that ignores an empty search3 ---------------------------------------------------------------
+// That fallback is one request per album, so a pass is bounded and the next scan continues it. A pass that stopped early
+// must also remove nothing: `seen` only covers the albums it walked, and a complete pass is the only one that may trust it.
+const walkServer = async (albums, { ignoreOffset = false } = {}) => {
+  const calls = { search: 0, list: 0, album: 0 };
+  const endless = Array.from({ length: 500 }, (_, i) => ({ id: `a${i}`, name: `Album ${i}` }));
+  const srv = http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x');
+    const json = (body) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ 'subsonic-response': { status: 'ok', version: '1.16.1', ...body } })); };
+    const ok = crypto.createHash('md5').update(PASSWORD + (u.searchParams.get('s') || '')).digest('hex') === u.searchParams.get('t');
+    if (!ok) { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ 'subsonic-response': { status: 'failed', version: '1.16.1', error: { code: 40, message: 'Wrong username or password' } } })); }
+    const m = u.pathname.replace('/rest/', '');
+    if (m === 'ping.view') return json({});
+    if (m === 'getMusicFolders.view') return json({ musicFolders: { musicFolder: [{ id: 1, name: 'Music' }] } });
+    if (m === 'search3.view') { calls.search++; return json({ searchResult3: { song: [] } }); } // the empty search it ignores
+    if (m === 'getAlbumList2.view') {
+      calls.list++;
+      const off = ignoreOffset ? 0 : Number(u.searchParams.get('offset') || 0);
+      return json({ albumList2: { album: ignoreOffset ? endless : albums.slice(off, off + 500) } });
+    }
+    if (m === 'getAlbum.view') {
+      calls.album++;
+      const id = u.searchParams.get('id');
+      return json({ album: { song: [{ id: `s-${id}`, title: `Song ${id}`, artist: 'x', album: id, duration: 200 }] } });
+    }
+    res.writeHead(404); res.end();
+  });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  return { url: `127.0.0.1:${srv.address().port}`, calls, close: () => new Promise((r) => srv.close(r)) };
+};
+
+const walkSetup = async (serverUrl) => {
+  const db = openDb(fs.mkdtempSync(path.join(dir, 'walk-')));
+  const d = await subsonicDiscover(serverUrl, 'will', PASSWORD, normalizeUrl);
+  db.prepare('INSERT INTO sources(kind,name,url,token,user_id,salt) VALUES(?,?,?,?,?,?)').run('navidrome', 'Navidrome', d.url, d.token, d.userId, d.salt);
+  const id = Number(db.prepare('INSERT INTO libraries(name,path,type) VALUES(?,?,?)').run('Music', 'ms://1/all', 'radio').lastInsertRowid);
+  const lib = db.prepare('SELECT * FROM libraries WHERE id=?').get(id);
+  const src = db.prepare('SELECT * FROM sources WHERE id=1').get();
+  return {
+    db,
+    progress: () => ({ files: 0, changed: 0, dirs: 0, removed: 0 }),
+    scan: (p, log) => scanNavidrome(db, lib, src, 'all', p, { safeRemovals, log }),
+    keep: () => db.prepare('INSERT INTO items(library_id,kind,path,title) VALUES(?,?,?,?)').run(lib.id, 'track', 'ms://1/keep', 'Kept for now'),
+  };
+};
+
+
+test('the album walk stops at the cap, says so, and removes nothing it did not see', async () => {
+  const albums = Array.from({ length: 250 }, (_, i) => ({ id: `a${i}`, name: `Album ${i}` }));
+  const s = await walkServer(albums);
+  try {
+    const { db, progress, scan, keep } = await walkSetup(s.url);
+    keep();
+    const p = progress(), log = [];
+    await scan(p, (line) => log.push(line));
+    const walked = db.prepare("SELECT COUNT(*) n FROM items WHERE kind='track' AND path LIKE 'ms://1/s-%'").get().n;
+    assert.equal(s.calls.album, 200, 'one pass reads the cap, not the whole view');
+    assert.equal(walked, 200);
+    assert.equal(p.files, 200, 'the walk reports what it has read while it reads');
+    assert.equal(p.dirs, 200);
+    assert.equal(log.length, 2, log.join(' | '));
+    assert.match(log[0], /one album at a time/);
+    assert.match(log[1], /200 albums/);
+    assert.equal(db.prepare("SELECT value FROM settings WHERE key='navwalk_1/all'").get()?.value, '200');
+    assert.equal(s.calls.search, 1, 'the empty search is tried first');
+    assert.equal(s.calls.list, 1);
+    assert.ok(db.prepare("SELECT 1 FROM items WHERE path='ms://1/keep'").get(), 'an album the walk has not reached keeps its tracks');
+  } finally { await s.close(); }
+});
+
+test('the next pass finishes the walk and clears the cursor, and a sliced view still removes nothing', async () => {
+  const albums = Array.from({ length: 250 }, (_, i) => ({ id: `a${i}`, name: `Album ${i}` }));
+  const s = await walkServer(albums);
+  try {
+    const { db, progress, scan, keep } = await walkSetup(s.url);
+    keep();
+    await scan(progress(), () => {});
+    const p = progress(), log = [];
+    await scan(p, (line) => log.push(line));
+    assert.equal(s.calls.album, 250, 'the second pass reads the rest and stops there');
+    assert.equal(p.dirs, 50);
+    assert.equal(log.length, 1, 'no cap this time');
+    assert.equal(db.prepare("SELECT value FROM settings WHERE key='navwalk_1/all'").get(), undefined, 'the round is over, so the cursor goes');
+    assert.equal(p.removed, 0, 'a walk in slices cannot tell a deleted album from an unwalked one');
+    assert.ok(db.prepare("SELECT 1 FROM items WHERE path='ms://1/keep'").get());
+  } finally { await s.close(); }
+});
+
+test('a view that fits in one pass still prunes what the server no longer has', async () => {
+  const albums = Array.from({ length: 3 }, (_, i) => ({ id: `a${i}`, name: `Album ${i}` }));
+  const s = await walkServer(albums);
+  try {
+    const { db, progress, scan, keep } = await walkSetup(s.url);
+    keep();
+    const p = progress(), log = [];
+    await scan(p, (line) => log.push(line));
+    assert.equal(s.calls.album, 3);
+    assert.equal(log.length, 1);
+    assert.equal(p.removed, 1);
+    assert.equal(db.prepare("SELECT 1 FROM items WHERE path='ms://1/keep'").get(), undefined, 'this pass saw the whole view');
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM items WHERE kind='track'").get().n, 3);
+  } finally { await s.close(); }
+});
+
+test('a server that serves the same album page for ever still terminates', async () => {
+  const s = await walkServer([], { ignoreOffset: true });
+  try {
+    const { progress, scan } = await walkSetup(s.url);
+    const p = progress(), log = [];
+    await scan(p, (line) => log.push(line));
+    assert.equal(s.calls.album, 200, 'the cap ends the pass instead of looping');
+    assert.equal(s.calls.list, 1);
+    assert.equal(p.files, 200);
+    assert.equal(log.length, 2);
+  } finally { await s.close(); }
 });
