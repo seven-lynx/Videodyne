@@ -34,7 +34,7 @@ A missing or wrong credential returns `401 {"error":"login required"}`.
 | `PATCH /api/channels/:id` | `{name?, number?, enabled?}` |
 | `POST /api/channels/rebuild` | Re-infer channels and re-plan |
 | `GET /api/epg?from=&to=` | Unix seconds. `{now, from, to, programmes: {channelId: [{id, item, start, end, title, subtitle, plot, season, episode, year, genres, ...}]}}` |
-| `GET /api/channels/:id/now` | What is on right now |
+| `GET /api/channels/:id/now` | `{now, programme}`: `programme` is the object `/api/epg` lists for that channel at that instant (title, subtitle, plot, genres and the rest), or `null` when nothing is scheduled — a live channel has no programme row, so it answers `null` too |
 | `GET /api/items/:id` | Full metadata for a programme's item |
 | `GET /api/art/:id` | Poster / cover image |
 
