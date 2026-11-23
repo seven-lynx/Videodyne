@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { fitSetting, getSettings, setSettings } from '../src/db.js';
 import { breakSegments } from '../src/scheduler.js';
@@ -51,4 +52,24 @@ test('ad-break splitting is always finite (a zero setting used to loop forever)'
     assert.ok(Number.isInteger(n) && n >= 2 && n <= 40, `every=${every} gave ${n}`);
   }
   assert.equal(breakSegments(3600, 20), 3);
+});
+
+test('the stream height default comes from the one reader, taken at boot', () => {
+  // WBTV_HEIGHT was read a second time here, at import, so a later change to the environment
+  // silently outranked the value config.js read at boot. A child process is the only way to change
+  // an env var between the two imports; it must still see the boot value.
+  const src = new URL('../src/', import.meta.url).href;
+  const script = `
+    const { DatabaseSync } = await import('node:sqlite');
+    process.env.WBTV_HEIGHT = '576';
+    await import(${JSON.stringify(`${src}config.js`)});
+    process.env.WBTV_HEIGHT = '1080';
+    const { getSettings } = await import(${JSON.stringify(`${src}db.js?one-reader`)});
+    const db = new DatabaseSync(':memory:');
+    db.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)');
+    console.log(getSettings(db).streamHeight);
+  `;
+  const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout.trim(), '576', 'db.js read WBTV_HEIGHT again instead of using cfg.height');
 });
