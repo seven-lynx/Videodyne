@@ -39,6 +39,7 @@ reason beside it.
 | 2026-11-23 | `80a0511` | upstream | Bind the channel and library ids in the two statements that built them into SQL text - a channel list inside `IN (...)` and a library id after `library_id=` - and drop a filter that is not a number instead of writing `NaN` into it | yes | candidate | #12 |
 | 2026-11-23 | `fb6cadf` | upstream | Treat only SQLite's unique violation on `ads.source` as a duplicate while scanning an ads library, so a failing insert reaches the scan result instead of being dropped as if the advert were already there | yes | candidate | #6 |
 | 2026-11-23 | `454b31e` | upstream | Give the still-check's `ffprobe` the kill timer the sampler already had and clear both timers when their child closes, so a probe wedged on a network file rejects instead of holding the download worker for ever | yes | candidate | #7 |
+| 2026-11-23 | `41dc6f8` | upstream | Stamp the failed-login counter, halve it for every quiet minute and cap the wait at 3 s, so a mistyped password no longer slows every later login for ever; the throttle takes an injected clock and the route an injected sleep, so the decay is tested without waiting | yes | candidate | #4 |
 
 ## How a row is added
 
