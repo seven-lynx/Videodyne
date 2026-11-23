@@ -2,11 +2,12 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const SCHEMA = `
+export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS libraries (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, path TEXT NOT NULL UNIQUE,
-  type TEXT NOT NULL, last_scan INTEGER
+  type TEXT NOT NULL, last_scan INTEGER,
+  channel_group TEXT, group_mode TEXT NOT NULL DEFAULT 'inferred'
 );
 -- media servers (Jellyfin / Emby) whose libraries are read through their API; the key stays on the server
 CREATE TABLE IF NOT EXISTS sources (
@@ -43,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_shows_lib ON shows(library_id);
 CREATE TABLE IF NOT EXISTS channels (
   id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE, kind TEXT NOT NULL,
   auto_name TEXT NOT NULL, name_override TEXT, number INTEGER, enabled INTEGER DEFAULT 1,
-  item_count INTEGER DEFAULT 0
+  item_count INTEGER DEFAULT 0, grp TEXT
 );
 CREATE TABLE IF NOT EXISTS channel_items (
   channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
