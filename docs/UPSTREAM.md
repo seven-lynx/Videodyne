@@ -43,6 +43,7 @@ reason beside it.
 | 2026-11-23 | `b13a421` | upstream | Ask the XMLTV guide for the horizon the scheduler actually plans (14 h) instead of 36, so an IPTV player's grid stops ending a third of the way through the document and the guide is not two and a half times the size it can fill | yes | candidate | #9 |
 | 2026-11-23 | `c732bfb` | upstream | Answer "what is on now" with the guide's own programme object: both guide routes select one joined row and map it through one function, so a client renders the on-now answer with the code it already has for the guide, and a music programme's track list comes back on both | yes | candidate | #8 |
 | 2026-11-23 | `a5e6976` | upstream | Keep the media server's two id namespaces apart when downloading art: the download list says series or item and the prefix picks the table, instead of membership in a set of series ids, and only an id the server uses for both gains its namespace in the file name, so the covers already in the config folder keep theirs | yes | candidate | #16 |
+| 2026-11-23 | `5fd06db` | upstream | Retry a file `ffprobe` could not read instead of writing it off for ever: the failure counter and the time of the last attempt become `items` columns in `SCHEMA` and in `migrate()`, the wait between tries grows from an hour to six to a day, the fourth failure is logged once with the path, and a failed probe stops zeroing the duration an NFO had supplied | yes | candidate | #1 |
 
 ## How a row is added
 
