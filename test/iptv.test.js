@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseM3u, classifyPlaylist, isYoutube, isUrl } from '../src/iptv.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { parseM3u, classifyPlaylist, isYoutube, isUrl, checkStreams } from '../src/iptv.js';
+import { openDb } from '../src/db.js';
 
 const LIST = `#EXTM3U x-tvg-url="http://epg.example/guide.xml"
 #EXTINF:-1 tvg-id="BBC1.uk" tvg-logo="http://l/bbc.png" group-title="News, UK",BBC News (UK)
@@ -38,4 +42,15 @@ test('classifyPlaylist tells a channel list from a single HLS stream', () => {
 test('url helpers', () => {
   assert.ok(isUrl('https://x/y') && !isUrl('/mnt/x.m3u'));
   assert.ok(isYoutube('https://www.youtube.com/watch?v=abc') && isYoutube('https://youtu.be/abc') && !isYoutube('https://example.com/youtube.com/'));
+});
+
+test('the live-stream check binds the library id instead of splicing it', async () => {
+  const db = openDb(fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-iptv-')));
+  const seen = [];
+  const prepare = db.prepare.bind(db);
+  db.prepare = (sql) => { seen.push(sql); return prepare(sql); };
+  assert.equal(await checkStreams(db, 7), 0); // an empty library, so no stream is probed and no ffprobe runs
+  const sel = seen.find((sql) => sql.includes('FROM live_streams WHERE alive IS NULL'));
+  assert.match(sel, /AND library_id=\?$/);
+  assert.doesNotMatch(sel, /library_id=\d/); // a digit here is the id written into the statement
 });

@@ -404,9 +404,13 @@ export function ensureSchedule(db, now = Date.now() / 1000) {
 export async function rescheduleFuture(db, now = Date.now() / 1000, channelIds = null) {
   if (planning) await planning; // never delete underneath a running plan
   tx(db, () => {
-    const only = channelIds ? ` AND channel_id IN (${channelIds.map(Number).join(',') || 'NULL'})` : '';
-    db.prepare('DELETE FROM programmes WHERE start > ?' + only).run(now);
-    db.prepare('DELETE FROM blocks WHERE start > ? AND programme_id IS NULL' + only).run(now); // stray ad breaks
+    // the ids are data: they are bound, never spliced, because an `IN (...)` list is exactly where a
+    // string-built statement comes back. An empty list means "no channel", which `IN (NULL)` says.
+    const ids = channelIds ? channelIds.map(Number).filter(Number.isFinite) : null;
+    const only = ids ? ` AND channel_id IN (${ids.map(() => '?').join(',') || 'NULL'})` : '';
+    const args = ids ?? [];
+    db.prepare('DELETE FROM programmes WHERE start > ?' + only).run(now, ...args);
+    db.prepare('DELETE FROM blocks WHERE start > ? AND programme_id IS NULL' + only).run(now, ...args); // stray ad breaks
   });
   await ensureSchedule(db, now);
 }

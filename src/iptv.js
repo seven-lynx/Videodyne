@@ -129,7 +129,12 @@ export async function probeLive(url, timeoutMs = 20000) {
 
 /** Background health check so dead streams don't clutter the guide. */
 export async function checkStreams(db, libraryId = null, onProgress) {
-  const rows = db.prepare(`SELECT id,url,src_kind FROM live_streams WHERE alive IS NULL ${libraryId ? 'AND library_id=' + Number(libraryId) : ''}`).all();
+  // the id is bound, not spliced; an id that is not a number drops the filter instead of asking
+  // SQLite for a column called NaN
+  const libId = Number(libraryId);
+  const scoped = Boolean(libraryId) && Number.isFinite(libId);
+  const filter = scoped ? ' AND library_id=?' : '';
+  const rows = db.prepare(`SELECT id,url,src_kind FROM live_streams WHERE alive IS NULL${filter}`).all(...(scoped ? [libId] : []));
   let i = 0, done = 0;
   const upd = db.prepare('UPDATE live_streams SET alive=?, checked=? WHERE id=?');
   await Promise.all(Array.from({ length: 6 }, async () => {
