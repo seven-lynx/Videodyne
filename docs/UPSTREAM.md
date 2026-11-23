@@ -32,6 +32,7 @@ reason beside it.
 |---|---|---|---|---|---|---|
 | 2026-11-22 | `c1190be` | upstream | Untrack `tools/__pycache__/*.pyc` and add the ignore rule | yes | open | #3 |
 | 2026-11-22 | - | upstream | Hardware-encoder results from a real GPU, for the open help-wanted issue | yes | candidate | - |
+| 2026-11-22 | `99487f8` | upstream | Test the migration path: an old-shaped database gains every column `migrate()` adds, and the old `libraries` CHECK is rebuilt | yes | candidate | #18 |
 
 ## How a row is added
 
