@@ -33,6 +33,7 @@ reason beside it.
 | 2026-11-22 | `c1190be` | upstream | Untrack `tools/__pycache__/*.pyc` and add the ignore rule | yes | open | #3 |
 | 2026-11-22 | - | upstream | Hardware-encoder results from a real GPU, for the open help-wanted issue | yes | candidate | - |
 | 2026-11-22 | `99487f8` | upstream | Test the migration path: an old-shaped database gains every column `migrate()` adds, and the old `libraries` CHECK is rebuilt | yes | candidate | #18 |
+| 2026-11-23 | `0468867` | upstream | Test the access gate: the 401 challenge, the three ways an API key is presented, the signed cookie and its expiry, and that deleting the password opens the app again | yes | candidate | #17 |
 
 ## How a row is added
 
