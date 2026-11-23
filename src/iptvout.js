@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import { cfg } from './config.js';
 import { logoFile } from './logos.js';
+import { HORIZON_HOURS } from './scheduler.js';
 
 // XML 1.0 forbids most control characters outright, and one stray byte in a scraped title makes a strict parser (Plex, Jellyfin) reject the whole guide
 const XML_BAD = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
@@ -38,7 +39,8 @@ export function registerIptvOut(app, db, getBroadcaster, getToken = () => '') {
 
   app.get('/iptv/epg.xml', async (req, reply) => {
     const now = Date.now() / 1000;
-    const res = await app.inject({ url: `/api/epg?from=${Math.floor(now - 3600)}&to=${Math.floor(now + 36 * 3600)}`, headers: { 'x-wbtv-key': getToken() } });
+    // one hour of history, then exactly as far ahead as the schedule is planned: asking for more leaves a blank grid at the end of the guide. The key travels as ?key= like every other URL in this module
+    const res = await app.inject({ url: `/api/epg?from=${Math.floor(now - 3600)}&to=${Math.floor(now + HORIZON_HOURS * 3600)}${tq()}` });
     const epg = JSON.parse(res.body);
     const chs = channels();
     let x = '<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="WBTV">\n';

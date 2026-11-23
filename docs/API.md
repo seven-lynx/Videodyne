@@ -69,7 +69,7 @@ A missing or wrong credential returns `401 {"error":"login required"}`.
 | Path | Use |
 |---|---|
 | `/iptv/playlist.m3u` | M3U playlist for any IPTV player |
-| `/iptv/epg.xml` | XMLTV guide (as far ahead as the schedule is planned, about 14 hours) |
+| `/iptv/epg.xml` | XMLTV guide — one hour of history plus exactly the horizon the scheduler plans (14 hours), so it never runs past the schedule |
 | `/discover.json`, `/lineup.json`, `/lineup_status.json`, `/device.xml` | HDHomeRun emulation for Plex, Jellyfin, Emby and Channels |
 
 When a password is set, URLs shown in Setup > Settings > Security already include `?key=`.

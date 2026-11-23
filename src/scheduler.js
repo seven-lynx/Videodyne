@@ -11,7 +11,7 @@ import { classify, daypartWeight, pickWeighted, guessAdYear, eraWeight, programm
  *   blocks:     the playable pieces - content slices and ads - that make up the airing
  */
 
-const HORIZON_HOURS = 14;
+export const HORIZON_HOURS = 14;
 const HISTORY_HOURS = 2;
 const rand = (a, b) => a + Math.random() * (b - a);
 const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
