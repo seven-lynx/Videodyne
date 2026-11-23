@@ -35,6 +35,7 @@ reason beside it.
 | 2026-11-22 | `99487f8` | upstream | Test the migration path: an old-shaped database gains every column `migrate()` adds, and the old `libraries` CHECK is rebuilt | yes | candidate | #18 |
 | 2026-11-23 | `0468867` | upstream | Test the access gate: the 401 challenge, the three ways an API key is presented, the signed cookie and its expiry, and that deleting the password opens the app again | yes | candidate | #17 |
 | 2026-11-23 | `5fbc835` | upstream | Build the three columns that lived only in `migrate()` into `SCHEMA`, so a fresh database is correct without it; the ALTERs stay as the upgrade path | yes | candidate | #2 |
+| 2026-11-23 | `e473a8b` | upstream | Read the stream height once: the settings default comes from `cfg.height` instead of a second `process.env` read, so a documented knob cannot be outranked at import | yes | candidate | #11 |
 
 ## How a row is added
 
