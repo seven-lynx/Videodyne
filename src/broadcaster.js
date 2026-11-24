@@ -38,6 +38,48 @@ async function serverLyrics(db, stored) {
 // media-server stream URLs carry the API key (Jellyfin) or the token and salt (Navidrome / Subsonic): never write them to the logs
 export const hideKeys = (s) => String(s).replace(/(api_?key)=[^&\s'"]+/gi, '$1=***').replace(/([?&])(t|s)=[0-9a-f]{8,}/g, '$1$2=***');
 
+const PARKED_CAP = 200;  // files the OS is holding: the live window is bounded, so this is slack, not a target
+const PARKED_TRIES = 10; // syncs a parked file is retried in before it is reported and left to the shutdown
+
+/**
+ * Segment files the OS will not let go of yet. Windows refuses the unlink (EPERM, or EBUSY) while another
+ * program still has the file open, and by then the segment has already left the playlist - so nothing would
+ * ever ask again and the live folder would grow for the life of the channel. Park it, try again on the next
+ * sync, and say so once when it never comes free: a leak nobody logged is a leak nobody can see. The folder
+ * is removed when the channel stops, which is the backstop for a file that outlives every retry.
+ */
+export function createReaper({ rm = (file) => fs.rmSync(file, { force: true }), cap = PARKED_CAP, tries = PARKED_TRIES, log = (msg) => console.error(msg) } = {}) {
+  const parked = new Map(); // file -> drain attempts still owed
+  const held = (err) => err?.code === 'EBUSY' || err?.code === 'EPERM';
+  // true: gone, or gone as far as this process can tell. false: the OS is still holding it.
+  const unlink = (file) => {
+    try { rm(file); return true; }
+    catch (err) {
+      if (held(err)) return false;
+      log(`live: ${file} could not be removed (${err?.code || err}), leaving it in the live folder`);
+      return true;
+    }
+  };
+  return {
+    /** Remove one file now, parking it while the OS holds it. */
+    drop(file) {
+      if (unlink(file)) { parked.delete(file); return; }
+      if (parked.size >= cap) parked.delete(parked.keys().next().value);
+      parked.set(file, tries);
+    },
+    /** One more attempt at everything parked; called from the playlist sync. */
+    drain() {
+      for (const [file, left] of [...parked]) {
+        if (unlink(file)) { parked.delete(file); continue; }
+        if (left > 1) { parked.set(file, left - 1); continue; }
+        parked.delete(file);
+        log(`live: ${file} stayed locked through ${tries} retries, left in the live folder until the channel stops`);
+      }
+    },
+    pending: () => parked.size,
+  };
+}
+
 /**
  * One Broadcaster per watched channel. It walks the persisted schedule in real time and
  * pipes each block through ffmpeg into one continuous live HLS stream. Every viewer of a
@@ -51,6 +93,7 @@ export class Broadcaster {
     this.segs = [];        // { g, file, dur, disc, discBefore }
     this.gCounter = 0; this.discCounter = 0;
     this.runs = []; this.runNo = 0; this.proc = null;
+    this.retire = createReaper(); // segments the OS would not release yet: see createReaper
     this.streamTime = 0; this.stopped = false;
     this.viewers = new Map();
     this.startedAt = Date.now();
@@ -101,7 +144,11 @@ export class Broadcaster {
     this.stopped = true;
     clearInterval(this.reaper); clearInterval(this.warmTimer);
     try { this.proc?.kill('SIGKILL'); } catch { /* gone */ }
-    setTimeout(() => fs.rmSync(this.dir, { recursive: true, force: true }), 500);
+    // the folder is the backstop for a file no retry could free: it must not throw out of a timer
+    setTimeout(() => {
+      try { fs.rmSync(this.dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); }
+      catch (err) { console.error(`[ch${this.id}] live folder ${this.dir} left behind: ${err?.code || err}`); }
+    }, 500);
     this.onStop?.(this.id);
   }
 
@@ -129,11 +176,12 @@ export class Broadcaster {
     if (this.segs.length >= 3) this.mark('seg3');
     this.runs = this.runs.filter((r) => !(r.ended && r.synced));
     for (const r of this.runs) if (r.ended) r.synced = true;
-    // drop old segments (and their files)
+    // drop old segments (and their files); one the OS still holds is parked and retried on the next sync
     while (this.segs.length > this.windowSegs + 6) {
       const old = this.segs.shift();
-      fs.rm(path.join(this.dir, old.file), () => {});
+      this.retire.drop(path.join(this.dir, old.file));
     }
+    this.retire.drain();
   }
 
   get ready() { this.sync(); return this.segs.length; }
