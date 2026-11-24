@@ -780,6 +780,8 @@ async function tabSettings(body) {
     h('p', { class: 'note' }, 'Now: ' + hwi.note + ' Hardware encoding needs the GPU passed into the container (see the README). WBTV tests it first and falls back to the CPU if it does not work. Applies from the next programme.'),
     h('h3', {}, 'Channel building'),
     numField(s, 'minChannelMinutes', 'Minimum channel size (minutes)', 'A studio/genre needs this much content to get its own channel. Lower = more channels. 0 = every studio.'),
+    numField(s, 'minTrackSeconds', 'Shortest radio track (seconds)', 'Radio skips anything shorter: a sting, a skit, an intro. 45 by default.'),
+    numField(s, 'maxTrackSeconds', 'Longest radio track (seconds)', 'And anything longer: an hour-long mix, a whole DJ set. 900 (15 minutes) by default.'),
     boolField(s, 'tvGenreChannelsForAll', 'Genre channels for every TV show', 'By default only shows with no (big enough) studio go on genre channels. Turn on to put every show on its genre channels too.'),
     boolField(s, 'movieStudioChannels', 'Movie studio channels', 'e.g. a Warner Bros. film channel.'),
     numField(s, 'movieStudioMinFilms', 'Films needed for a studio channel', '', { min: 1 }),
