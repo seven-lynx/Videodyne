@@ -120,11 +120,14 @@ const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 export function inferChannels(db) {
   const st = getSettings(db);
   const minSec = st.minChannelMinutes * 60;
+  // fitSetting validates one key at a time, so a pair set the wrong way round reaches here intact: read it low-to-high, or the window is empty
+  const trackMin = Math.min(st.minTrackSeconds, st.maxTrackSeconds);
+  const trackMax = Math.max(st.minTrackSeconds, st.maxTrackSeconds);
 
   const rows = db.prepare(`
     SELECT i.id, i.kind, i.title AS i_title, i.show_id, i.year, i.runtime, i.studios, i.genres, i.artist, i.album, i.path, i.library_id, l.name AS lib_name, l.type AS lib_type, l.path AS lib_path, l.channel_group AS grp, l.group_mode AS gmode,
       s.studios AS s_studios, s.genres AS s_genres
-    FROM items i LEFT JOIN shows s ON s.id = i.show_id LEFT JOIN libraries l ON l.id = i.library_id WHERE i.runtime > 0 AND (i.kind <> 'track' OR i.runtime BETWEEN 45 AND 900) ORDER BY i.year IS NULL, i.year, i.id`).all(); // radio: no clips of a few seconds, no hour-long mixes; the oldest release of a song comes first
+    FROM items i LEFT JOIN shows s ON s.id = i.show_id LEFT JOIN libraries l ON l.id = i.library_id WHERE i.runtime > 0 AND (i.kind <> 'track' OR i.runtime BETWEEN ? AND ?) ORDER BY i.year IS NULL, i.year, i.id`).all(trackMin, trackMax); // radio: no clips of a few seconds, no hour-long mixes (both adjustable); the oldest release of a song comes first
 
   // A "unit" is a whole show (all its episodes stay together) or a single movie.
   const units = new Map();

@@ -17,6 +17,18 @@ test('numbers are clamped into a sane range, junk is rejected', () => {
   assert.equal(fitSetting('scanIntervalMinutes', 1), 5);
 });
 
+test('the radio track window is two settings, each clamped and neither dropped', () => {
+  assert.equal(fitSetting('minTrackSeconds', 20), 20);
+  assert.equal(fitSetting('minTrackSeconds', '45'), 45);
+  assert.equal(fitSetting('minTrackSeconds', -5), 0);
+  assert.equal(fitSetting('minTrackSeconds', 99999), 3600);
+  assert.equal(fitSetting('minTrackSeconds', 'x'), undefined);
+  assert.equal(fitSetting('maxTrackSeconds', 1200), 1200);
+  assert.equal(fitSetting('maxTrackSeconds', 0), 1);
+  assert.equal(fitSetting('maxTrackSeconds', 999999), 86400);
+  assert.equal(fitSetting('maxTrackSeconds', null), undefined);
+});
+
 test('booleans, enums and times are checked', () => {
   assert.equal(fitSetting('adsEnabled', 'false'), false);
   assert.equal(fitSetting('adsEnabled', true), true);

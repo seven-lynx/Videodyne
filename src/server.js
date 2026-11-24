@@ -382,7 +382,7 @@ app.put('/api/settings', async (req) => {
   const scanKeys = ['autoScan', 'scanIntervalMinutes', 'scanOnStartup', 'hwEncoder', 'channelBug', 'lyrics', 'radioStyle', 'streamHeight', 'language', 'subtitleMode']; // these never need a re-plan
   const plan = (s) => JSON.stringify(Object.entries(s).filter(([k]) => !scanKeys.includes(k)));
   if (plan(before) !== plan(after)) {
-    const inferKeys = ['minChannelMinutes', 'tvGenreChannelsForAll', 'movieStudioChannels', 'movieStudioMinFilms', 'movieDecadeChannels'];
+    const inferKeys = ['minChannelMinutes', 'minTrackSeconds', 'maxTrackSeconds', 'tvGenreChannelsForAll', 'movieStudioChannels', 'movieStudioMinFilms', 'movieDecadeChannels'];
     if (inferKeys.some((k) => before[k] !== after[k])) inferChannels(db);
     await rescheduleFuture(db);
   }

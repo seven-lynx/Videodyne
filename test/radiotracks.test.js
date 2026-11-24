@@ -27,6 +27,25 @@ test('radio: a repeated song is played once, junk and hour-long tracks are left 
   assert.equal(ch[0].item_count, 20);
 });
 
+test('radio: the track length window is two settings, and a crossed pair is read as its two ends', () => {
+  const db = openDb(fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-radio-window-')));
+  setSettings(db, { minChannelMinutes: 1 });
+  const lib = Number(db.prepare("INSERT INTO libraries(name,path,type) VALUES('Music','/m','radio')").run().lastInsertRowid);
+  const t = (title, runtime) => db.prepare(`INSERT INTO items(library_id,kind,path,title,runtime,probed,studios,genres,actors,artist,year) VALUES (?,'track',?,?,?,1,'[]',?,'[]','Band',1990)`)
+    .run(lib, `/m/${title}.mp3`, title, runtime, JSON.stringify(['Rock']));
+  for (let i = 0; i < 20; i++) t(`Song ${i}`, 200);
+  t('Sting', 30);
+  const pool = () => db.prepare("SELECT item_count FROM channels WHERE key='radio:genre:rock box'").get()?.item_count || 0;
+  inferChannels(db);
+  assert.equal(pool(), 20, 'a 30 s sting is under the default 45 s floor');
+  setSettings(db, { minTrackSeconds: 20 });
+  inferChannels(db);
+  assert.equal(pool(), 21, 'a 20 s floor lets the sting in');
+  setSettings(db, { minTrackSeconds: 300, maxTrackSeconds: 100 }); // crossed on purpose: 100-300, not an empty window
+  inferChannels(db);
+  assert.equal(pool(), 20, 'the two ends are ordered, so a pair set the wrong way round cannot empty a station');
+});
+
 test('an artist that is a number ("311") is not re-read from disk on every scan', async () => {
   const fs = await import('node:fs'), os = await import('node:os'), path = await import('node:path');
   const { openDb } = await import('../src/db.js');

@@ -83,7 +83,7 @@ The complete feature list, by area. For what's new in each version see the [rele
 
 - **Music-video channels** playing back to back with an **Artist - Title lower-third**. Uses `<musicvideo>` NFOs, or just name files `Artist - Title.mp4`.
 - **Radio stations** from audio files (mp3, flac, m4a, ogg, ...): the screen shows **cover art, now-playing text and a live waveform**.
-  - **Tidy stations**: a song plays once across different releases, tracks under 45 seconds or over 15 minutes are skipped, and sub-genres fold into one station per family.
+  - **Tidy stations**: a song plays once across different releases, tracks under 45 seconds or over 15 minutes are skipped (both adjustable), and sub-genres fold into one station per family.
   - **Station look** (Setup): classic, a blurred cover-art backdrop, or frequency bars.
   - **Lyrics**: a time-synced `.lrc`, an `.srt`, or a `.txt`/`.lyrics` file next to the track (same name), or lyrics stored in the file's tags. Synced lyrics follow the song with the next line previewed; plain text is paged across the song as an estimate. Switch off in Settings.
   - **Cover art** from `cover.jpg` / `folder.jpg` / `front.jpg` in the folder, or the picture embedded in the files (read once per album and filled in gradually for existing libraries).
