@@ -204,6 +204,7 @@ test('a series id an episode also uses gets its own cover, and the art already o
     await scanLibrary(db, db.prepare('SELECT * FROM libraries WHERE id=?').get(id), again);
     assert.equal(fs.readdirSync(path.join(dir, 'covers')).filter((f) => f.includes('x1')).length, 2);
   } finally { jelly.close(); }
+});
 
 // Jellyfin 12 reads the product out of the MediaBrowser Authorization header, so the name has to be
 // in the header itself and not in a URL (BRAND/B2).
@@ -212,6 +213,4 @@ test('every call to Jellyfin is signed as Videodyne', async () => {
   assert.match(externalAuth, /Client="Videodyne"/);
   assert.match(externalAuth, /DeviceId="videodyne"/);
   assert.doesNotMatch(externalAuth, /WBTV/i);
-});
-
 });
