@@ -125,10 +125,18 @@ export function select(file, info, prefs) {
   return { audio: c.audio, subs };
 }
 
+/**
+ * A path as the value of a filter option. An option ends at ':' and a backslash is an escape there, and ffmpeg
+ * unescapes twice — once for the graph, once for the option — so a Windows drive letter needs two backslashes:
+ * `C:/x` splits at the colon and `C\:/x` still reaches the filter as `C`; only `C\\:/x` survives. Measured on
+ * ffmpeg 2026-10-04 for `subtitles=`, `movie=` and `drawtext=` in both -vf and -filter_complex.
+ */
+export const filterPath = (p) => String(p).replace(/\\/g, '/').replace(/:/g, '\\\\:');
+
 /** The filter that draws the subtitles. The video was cut with -ss, so its timestamps are shifted to match the subtitle file and back. */
 export function subtitleFilter(assFile, offset) {
-  const f = String(assFile).split(path.sep).join('/');
-  const font = path.dirname(cfg.fontFile).split(path.sep).join('/');
+  const f = filterPath(assFile);
+  const font = filterPath(path.dirname(cfg.fontFile));
   const style = `FontName=${fontFamily(cfg.fontFile)},FontSize=15,Outline=1.6,Shadow=0.8,MarginV=24,Bold=1`;
   const shift = Math.max(0, offset || 0);
   const pre = shift > 0.05 ? `setpts=PTS+${shift.toFixed(3)}/TB,` : '';

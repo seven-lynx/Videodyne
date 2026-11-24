@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normLang, choose, subtitleFilter } from '../src/streams.js';
+import { normLang, choose, subtitleFilter, filterPath } from '../src/streams.js';
 
 const A = (lang, title = '') => ({ lang, title });
 const S = (lang, codec = 'subrip', extra = {}) => ({ lang, codec, title: '', forced: false, ...extra });
@@ -64,4 +64,10 @@ test('the subtitle filter shifts timestamps for a mid-file start and not for the
   const start = subtitleFilter('/config/subs/abc.ass', 0);
   assert.ok(start.startsWith('subtitles=filename='));
   assert.ok(!start.includes('setpts'));
+});
+
+test('a filter path escapes the drive colon for both filter levels and leaves a Linux path alone', () => {
+  assert.equal(filterPath('C:\\cfg\\subs\\a.ass'), 'C\\\\:/cfg/subs/a.ass');
+  assert.equal(filterPath('/config/subs/a.ass'), '/config/subs/a.ass');
+  assert.ok(subtitleFilter('C:\\cfg\\subs\\a.ass', 0).includes('subtitles=filename=C\\\\:/cfg/subs/a.ass'));
 });

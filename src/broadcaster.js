@@ -10,12 +10,11 @@ import { logoFile } from './logos.js';
 import { prepare as prepareNarration, cached as cachedNarration } from './tts.js';
 import { findLyrics, buildAss, fontFamily, parseLyrics } from './lyrics.js';
 import { resolveMedia, isRemote, remoteLyrics } from './mediaserver.js';
-import { select as selectStreams, subtitleFilter } from './streams.js';
+import { select as selectStreams, subtitleFilter, filterPath } from './streams.js';
 import { openLive, forgetLive, isUrl } from './iptv.js';
 import { getBlockAt, ensureChannelSchedule } from './scheduler.js';
 
 const SEG_SECONDS = 4;
-const fp = (p) => String(p).split(path.sep).join('/'); // paths inside ffmpeg filter strings: forward slashes only (a backslash is an escape there)
 const probeMemo = new Map(); // file -> { at, info }: remembering what a file contains saves a slow network-share round trip on every tune-in
 async function probeFile(file) {
   const hit = probeMemo.get(file);
@@ -303,8 +302,8 @@ export class Broadcaster {
         const lf = path.join(dir, `${this.runNo}_${i}_l.txt`), tf = path.join(dir, `${this.runNo}_${i}_t.txt`);
         fs.writeFileSync(lf, c.label); fs.writeFileSync(tf, title);
         v += `,drawbox=x=0:y=ih*0.79:w=iw:h=ih*0.16:color=black@0.72:t=fill:${en}` +
-          `,drawtext=fontfile=${cfg.fontFile}:textfile=${fp(lf)}:expansion=none:x=w*0.045:y=h*0.805:fontsize=${f1}:fontcolor=0xffd400:${en}` +
-          `,drawtext=fontfile=${cfg.fontFile}:textfile=${fp(tf)}:expansion=none:x=w*0.045:y=h*0.855:fontsize=${f2}:fontcolor=white:${en}`;
+          `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${filterPath(lf)}:expansion=none:x=w*0.045:y=h*0.805:fontsize=${f1}:fontcolor=0xffd400:${en}` +
+          `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${filterPath(tf)}:expansion=none:x=w*0.045:y=h*0.855:fontsize=${f2}:fontcolor=white:${en}`;
       });
     }
     v += e.tail + '[v]';
@@ -349,7 +348,7 @@ export class Broadcaster {
     fs.mkdirSync(dir, { recursive: true });
     const f = path.join(dir, `${this.runNo}_${name}.txt`);
     fs.writeFileSync(f, String(text ?? '').replace(/[\r\n]+/g, ' ').slice(0, 60));
-    return fp(f);
+    return filterPath(f);
   }
 
   runContent(file, offset, dur, hasAudio, burst, meta, pick = null) {
@@ -363,8 +362,8 @@ export class Broadcaster {
       const en = `enable='between(t,0.5,${Math.max(2, 8 - offset).toFixed(1)})'`;
       const af = this.textFile('mv_a', meta.artist || ''), tf = this.textFile('mv_t', meta.title || '');
       vf += `,drawbox=x=0:y=ih*0.80:w=iw*0.66:h=ih*0.14:color=black@0.66:t=fill:${en}` +
-        `,drawtext=fontfile=${cfg.fontFile}:textfile=${af}:expansion=none:x=w*0.035:y=h*0.815:fontsize=${Math.round(H * 0.042)}:fontcolor=0xffd400:${en}` +
-        `,drawtext=fontfile=${cfg.fontFile}:textfile=${tf}:expansion=none:x=w*0.035:y=h*0.865:fontsize=${Math.round(H * 0.05)}:fontcolor=white:${en}`;
+        `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${af}:expansion=none:x=w*0.035:y=h*0.815:fontsize=${Math.round(H * 0.042)}:fontcolor=0xffd400:${en}` +
+        `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${tf}:expansion=none:x=w*0.035:y=h*0.865:fontsize=${Math.round(H * 0.05)}:fontcolor=white:${en}`;
     }
     const args = ['-hide_banner', '-loglevel', 'error', '-nostdin',
       '-ss', offset.toFixed(3), '-readrate', '1', '-readrate_initial_burst', burst.toFixed(1), '-i', file];
@@ -379,7 +378,7 @@ export class Broadcaster {
     const { width: W, height: H } = cfg;
     const wh = Math.round(H * 0.2), artH = Math.round(H * 0.5);
     const tx = hasArt ? Math.round(W * 0.06 + artH + W * 0.04) : Math.round(W * 0.08);
-    const font = fs.existsSync(cfg.fontFile) ? `fontfile=${cfg.fontFile}:` : '';
+    const font = fs.existsSync(cfg.fontFile) ? `fontfile=${filterPath(cfg.fontFile)}:` : '';
     const dt = (file, y, size, color) => `drawtext=${font}textfile=${file}:expansion=none:x=${tx}:y=${y}:fontsize=${size}:fontcolor=${color}`;
     const files = { l: this.textFile('av_l', label), t: this.textFile('av_t', title), a: this.textFile('av_a', sub1), b: this.textFile('av_b', sub2) };
     let f = '[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[a][w];' +
@@ -392,8 +391,8 @@ export class Broadcaster {
       `[bg][wv]overlay=0:${H - wh - Math.round(H * 0.04)}[b1];`;
     f += hasArt ? `[${style === 'blur' ? 's1' : '2:v'}]scale=-2:${artH},format=yuv420p[art];[b1][art]overlay=${Math.round(W * 0.06)}:${Math.round(H * 0.14)}[b2];` : '[b1]null[b2];';
     f += `[b2]${dt(files.l, Math.round(H * 0.16), Math.round(H * 0.04), '0xffd400')},${dt(files.t, Math.round(H * 0.23), Math.round(H * 0.07), 'white')},` +
-      `${dt(files.a, Math.round(H * 0.34), Math.round(H * 0.05), '0x9fd8ff')},${dt(files.b, Math.round(H * 0.42), Math.round(H * 0.038), '0xaab4d8')}${ass ? `,subtitles=filename=${fp(ass)}:fontsdir=${fp(path.dirname(cfg.fontFile))}` : ''},format=yuv420p${videoTail()}[v]`;
-    return fp(f);
+      `${dt(files.a, Math.round(H * 0.34), Math.round(H * 0.05), '0x9fd8ff')},${dt(files.b, Math.round(H * 0.42), Math.round(H * 0.038), '0xaab4d8')}${ass ? `,subtitles=filename=${filterPath(ass)}:fontsdir=${filterPath(path.dirname(cfg.fontFile))}` : ''},format=yuv420p${videoTail()}[v]`;
+    return f;
   }
 
   /** A radio track: no picture of its own, so we draw one. */
@@ -472,11 +471,11 @@ export class Broadcaster {
     const { height: H } = cfg;
     const logo = logoFile(this.id);
     if (logo) {
-      return `[in]${vf}[m0];movie=${fp(logo)},scale=-2:${Math.round(H * 0.075)},format=rgba,colorchannelmixer=aa=0.75[lg];[m0][lg]overlay=W-w-W*0.03:H*0.045${tail}[out]`;
+      return `[in]${vf}[m0];movie=${filterPath(logo)},scale=-2:${Math.round(H * 0.075)},format=rgba,colorchannelmixer=aa=0.75[lg];[m0][lg]overlay=W-w-W*0.03:H*0.045${tail}[out]`;
     }
     if (!fs.existsSync(cfg.fontFile)) return vf + tail;
     const name = this.textFile('bug', this.chInfo().name);
-    return `${vf},drawtext=fontfile=${cfg.fontFile}:textfile=${name}:expansion=none:x=w-tw-w*0.03:y=h*0.045:fontsize=${Math.round(H * 0.04)}:fontcolor=white@0.7:shadowcolor=black@0.6:shadowx=2:shadowy=2${tail}`;
+    return `${vf},drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${name}:expansion=none:x=w-tw-w*0.03:y=h*0.045:fontsize=${Math.round(H * 0.04)}:fontcolor=white@0.7:shadowcolor=black@0.6:shadowx=2:shadowy=2${tail}`;
   }
 
   /** Closedown: a test card and a steady tone, like TV used to do overnight. */
@@ -489,8 +488,8 @@ export class Broadcaster {
       const l1 = this.textFile('so1', `${this.chInfo().name} has closed down for the night`);
       const l2 = this.textFile('so2', `Programmes resume at ${st.signOffTo}`);
       vf += `,drawbox=x=iw*0.12:y=ih*0.38:w=iw*0.76:h=ih*0.24:color=black@0.82:t=fill` +
-        `,drawtext=fontfile=${cfg.fontFile}:textfile=${l1}:expansion=none:x=(w-tw)/2:y=h*0.43:fontsize=${Math.round(H * 0.05)}:fontcolor=white` +
-        `,drawtext=fontfile=${cfg.fontFile}:textfile=${l2}:expansion=none:x=(w-tw)/2:y=h*0.52:fontsize=${Math.round(H * 0.04)}:fontcolor=0xffd400`;
+        `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${l1}:expansion=none:x=(w-tw)/2:y=h*0.43:fontsize=${Math.round(H * 0.05)}:fontcolor=white` +
+        `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${l2}:expansion=none:x=(w-tw)/2:y=h*0.52:fontsize=${Math.round(H * 0.04)}:fontcolor=0xffd400`;
     }
     return this.runFfmpeg(['-hide_banner', '-loglevel', 'error', '-nostdin',
       '-re', '-f', 'lavfi', '-i', `pal75bars=size=${W}x${H}:rate=25`,
@@ -511,8 +510,8 @@ export class Broadcaster {
       const n = this.textFile('id_n', ch.number || '');
       const t = this.textFile('id_t', ch.name);
       const a = `alpha='if(lt(t+${el},0.6),(t+${el})/0.6,if(gt(t+${el},4.3),(5-(t+${el}))/0.7,1))'`;
-      vf += `,drawtext=fontfile=${cfg.fontFile}:textfile=${n}:expansion=none:x=(w-tw)/2:y=h*0.28:fontsize=${Math.round(H * 0.28)}:fontcolor=white:${a}` +
-        `,drawtext=fontfile=${cfg.fontFile}:textfile=${t}:expansion=none:x=(w-tw)/2:y=h*0.68:fontsize=${Math.round(H * 0.08)}:fontcolor=0xffd400:${a}`;
+      vf += `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${n}:expansion=none:x=(w-tw)/2:y=h*0.28:fontsize=${Math.round(H * 0.28)}:fontcolor=white:${a}` +
+        `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${t}:expansion=none:x=(w-tw)/2:y=h*0.68:fontsize=${Math.round(H * 0.08)}:fontcolor=0xffd400:${a}`;
     }
     return this.runFfmpeg(['-hide_banner', '-loglevel', 'error', '-nostdin',
       '-re', '-f', 'lavfi', '-i', `color=c=${colour}:s=${W}x${H}:r=25`,
