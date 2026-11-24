@@ -23,9 +23,11 @@ const songs = Array.from({ length: 600 }, (_, i) => ({
 }));
 songs.push({ id: 'short', title: 'Skit', artist: 'x', album: 'y', duration: 2 }); // too short to schedule
 let lastQuery = '';
+let lastClient = ''; // the Subsonic `c` (client name) the last request arrived with
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   if (down) { res.destroy(); return; }
+  if (u.searchParams.get('c')) lastClient = u.searchParams.get('c');
   const json = (body) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ 'subsonic-response': { status: 'ok', version: '1.16.1', type: 'navidrome', serverVersion: '0.53.0', ...body } })); };
   const fail = (code, message) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ 'subsonic-response': { status: 'failed', version: '1.16.1', error: { code, message } } })); };
   const ok = crypto.createHash('md5').update(PASSWORD + (u.searchParams.get('s') || '')).digest('hex') === u.searchParams.get('t');
@@ -249,3 +251,11 @@ test('a server that serves the same album page for ever still terminates', async
     assert.equal(log.length, 2);
   } finally { await s.close(); }
 });
+
+// Subsonic clients are listed by their `c` name, so a missed rename would still show the old product
+// in Navidrome's own UI (BRAND/B2).
+test('every call to Navidrome is signed as Videodyne', async () => {
+  await subsonicDiscover(url, 'will', PASSWORD, normalizeUrl);
+  assert.equal(lastClient, 'videodyne');
+});
+

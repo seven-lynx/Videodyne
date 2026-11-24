@@ -10,7 +10,7 @@ import { tx } from './db.js';
 const V = '1.16.1';
 const enc = encodeURIComponent;
 export const makeAuth = (password) => { const salt = crypto.randomBytes(8).toString('hex'); return { salt, token: crypto.createHash('md5').update(String(password) + salt).digest('hex') }; };
-const authQuery = (src) => `u=${enc(src.user_id || '')}&t=${src.token || ''}&s=${src.salt || ''}&v=${V}&c=wbtv&f=json`;
+const authQuery = (src) => `u=${enc(src.user_id || '')}&t=${src.token || ''}&s=${src.salt || ''}&v=${V}&c=videodyne&f=json`;
 
 // A server that ignores an empty search3 can only be read one album at a time, so a pass is bounded and the next scan
 // continues it: the album offset is kept in `settings` under `navwalk_<source>/<view>` (the same bookkeeping habit as

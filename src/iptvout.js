@@ -1,5 +1,5 @@
-// WBTV as a tuner: an M3U playlist + XMLTV guide for any IPTV player, and a fake HDHomeRun
-// so Plex / Jellyfin / Emby / Channels can add WBTV as a Live TV source.
+// Videodyne as a tuner: an M3U playlist + XMLTV guide for any IPTV player, and a fake HDHomeRun
+// so Plex / Jellyfin / Emby / Channels can add Videodyne as a Live TV source.
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import { cfg } from './config.js';
@@ -43,7 +43,7 @@ export function registerIptvOut(app, db, getBroadcaster, getToken = () => '') {
     const res = await app.inject({ url: `/api/epg?from=${Math.floor(now - 3600)}&to=${Math.floor(now + HORIZON_HOURS * 3600)}${tq()}` });
     const epg = JSON.parse(res.body);
     const chs = channels();
-    let x = '<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="WBTV">\n';
+    let x = '<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Videodyne">\n';
     for (const c of chs) x += `<channel id="wbtv.${c.id}"><display-name>${esc(c.name)}</display-name><display-name>${c.number}</display-name>${logoFile(c.id) ? `<icon src="${esc(`${baseUrl(req)}/api/channels/${c.id}/logo${tq()}`)}"/>` : ''}</channel>\n`;
     for (const c of chs) {
       for (const p of epg.programmes[c.id] || []) {
@@ -65,13 +65,13 @@ export function registerIptvOut(app, db, getBroadcaster, getToken = () => '') {
   const deviceId = () => crypto.createHash('md5').update(cfg.configDir).digest('hex').slice(0, 8).toUpperCase();
   const discover = (req) => {
     const base = baseUrl(req);
-    return { FriendlyName: 'WBTV', Manufacturer: 'WBTV', ModelNumber: 'HDTC-2US', FirmwareName: 'hdhomeruntc_atsc', FirmwareVersion: '20240101',
-      DeviceID: deviceId(), DeviceAuth: 'wbtv', TunerCount: 6, BaseURL: base, LineupURL: `${base}/lineup.json` };
+    return { FriendlyName: 'Videodyne', Manufacturer: 'Videodyne', ModelNumber: 'HDTC-2US', FirmwareName: 'hdhomeruntc_atsc', FirmwareVersion: '20240101',
+      DeviceID: deviceId(), DeviceAuth: 'videodyne', TunerCount: 6, BaseURL: base, LineupURL: `${base}/lineup.json` };
   };
   app.get('/discover.json', async (req) => discover(req));
   app.get('/device.xml', async (req, reply) => {
     const d = discover(req);
-    return reply.type('application/xml').send(`<?xml version="1.0"?><root xmlns="urn:schemas-upnp-org:device-1-0"><specVersion><major>1</major><minor>0</minor></specVersion><URLBase>${esc(d.BaseURL)}</URLBase><device><deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType><friendlyName>WBTV</friendlyName><manufacturer>WBTV</manufacturer><modelName>HDHR-WBTV</modelName><modelNumber>${d.ModelNumber}</modelNumber><serialNumber>${d.DeviceID}</serialNumber><UDN>uuid:${d.DeviceID}</UDN></device></root>`);
+    return reply.type('application/xml').send(`<?xml version="1.0"?><root xmlns="urn:schemas-upnp-org:device-1-0"><specVersion><major>1</major><minor>0</minor></specVersion><URLBase>${esc(d.BaseURL)}</URLBase><device><deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType><friendlyName>Videodyne</friendlyName><manufacturer>Videodyne</manufacturer><modelName>HDHR-Videodyne</modelName><modelNumber>${d.ModelNumber}</modelNumber><serialNumber>${d.DeviceID}</serialNumber><UDN>uuid:${d.DeviceID}</UDN></device></root>`);
   });
   app.get('/lineup_status.json', async () => ({ ScanInProgress: 0, ScanPossible: 1, Source: 'Cable', SourceList: ['Cable'] }));
   const lineup = async (req) => channels().map((c) => ({ GuideNumber: String(c.number), GuideName: c.name, URL: `${baseUrl(req)}/auto/v${c.number}${tq()}`, HD: 1 }));

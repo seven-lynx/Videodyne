@@ -13,11 +13,13 @@ const { discover, normalizeUrl, resolveMedia, parseRemote, isRemote, forgetSourc
 
 // a tiny Jellyfin: one user, a TV view with one series and three episodes, a movie view with one film
 let down = false;
+let externalAuth = ''; // the last Authorization header an authenticated call arrived with
 const TICKS = 10_000_000;
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   const json = (o, code = 200) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(o)); };
   if (down) { res.destroy(); return; }
+  if (req.headers.authorization) externalAuth = req.headers.authorization;
   if (u.pathname === '/System/Info/Public') return json({ ServerName: 'Test Jelly', ProductName: 'Jellyfin Server', Version: '10.9.0' });
   if (!/Token="goodkey"/.test(req.headers.authorization || '')) return json({}, 401); // Jellyfin 12: only the MediaBrowser Authorization header
   if (u.pathname === '/Users') return json([{ Id: 'u1', Name: 'will', Policy: { IsAdministrator: true } }]);
@@ -202,4 +204,14 @@ test('a series id an episode also uses gets its own cover, and the art already o
     await scanLibrary(db, db.prepare('SELECT * FROM libraries WHERE id=?').get(id), again);
     assert.equal(fs.readdirSync(path.join(dir, 'covers')).filter((f) => f.includes('x1')).length, 2);
   } finally { jelly.close(); }
+
+// Jellyfin 12 reads the product out of the MediaBrowser Authorization header, so the name has to be
+// in the header itself and not in a URL (BRAND/B2).
+test('every call to Jellyfin is signed as Videodyne', async () => {
+  await discover(url, 'goodkey');
+  assert.match(externalAuth, /Client="Videodyne"/);
+  assert.match(externalAuth, /DeviceId="videodyne"/);
+  assert.doesNotMatch(externalAuth, /WBTV/i);
+});
+
 });

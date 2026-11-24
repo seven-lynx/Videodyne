@@ -140,3 +140,15 @@ test('a Plex server that answers with nothing is not a deleted library', async (
   await scan(db, tv, '2', fake({ episodes: [] }), { files: 0, changed: 0 });
   assert.equal(db.prepare('SELECT COUNT(*) n FROM items').get().n, 0);
 });
+
+// The product a Plex server records for the request is what its own log and device list show, so the
+// name travels on every call, not only the first (BRAND/B2). The identifier stays one constant here:
+// a per-install identifier is PLEX2/P1 and issue #29.
+test('every request to Plex is signed as Videodyne', async () => {
+  const f = fake();
+  await discoverPlex(PLEX, 'tok1', { doFetch: f });
+  assert.ok(f.seen.length > 0);
+  assert.equal(f.seen[0].headers['X-Plex-Product'], 'Videodyne');
+  assert.equal(f.seen[0].headers['X-Plex-Client-Identifier'], 'videodyne');
+});
+

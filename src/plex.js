@@ -22,8 +22,8 @@ const sig = (o) => parseInt(crypto.createHash('md5').update(JSON.stringify(o)).d
 
 const HEADERS = (src) => ({
   'X-Plex-Token': src.token || '',
-  'X-Plex-Client-Identifier': 'wbtv',
-  'X-Plex-Product': 'WBTV',
+  'X-Plex-Client-Identifier': 'videodyne',
+  'X-Plex-Product': 'Videodyne',
   'X-Plex-Version': '1',
 });
 

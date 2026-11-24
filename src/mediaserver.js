@@ -1,4 +1,4 @@
-// Jellyfin and Emby as a source of TV and films (they share one API), so WBTV can read a library that lives in a media server
+// Jellyfin and Emby as a source of TV and films (they share one API), so Videodyne can read a library that lives in a media server
 // instead of (or as well as) folders. Items are stored as  ms://<sourceId>/<itemId>  and turned into a stream URL (with the API key)
 // only at the moment ffmpeg needs it, so no key is ever kept in an item path or sent to the browser.
 import fs from 'node:fs';
@@ -22,7 +22,7 @@ export function normalizeUrl(u) {
 
 /** Jellyfin 12 removed X-Emby-Token and ?api_key=; it wants  Authorization: MediaBrowser Token="..."  (and ?ApiKey= in a URL). Emby still uses the old ones. */
 const isEmby = (src) => src.kind === 'emby';
-const authHeaders = (src) => (isEmby(src) ? { 'X-Emby-Token': src.token || '' } : { Authorization: `MediaBrowser Client="WBTV", Device="WBTV", DeviceId="wbtv", Version="1", Token="${String(src.token || '').replace(/[^\w.-]/g, '')}"` });
+const authHeaders = (src) => (isEmby(src) ? { 'X-Emby-Token': src.token || '' } : { Authorization: `MediaBrowser Client="Videodyne", Device="Videodyne", DeviceId="videodyne", Version="1", Token="${String(src.token || '').replace(/[^\w.-]/g, '')}"` });
 /** ffmpeg cannot be given a header per request here, so a stream URL carries the key in the query: both spellings for Jellyfin (older and 12+), api_key for Emby. */
 const keyQuery = (src) => (isEmby(src) ? `api_key=${encodeURIComponent(src.token || '')}` : `ApiKey=${encodeURIComponent(src.token || '')}&api_key=${encodeURIComponent(src.token || '')}`);
 

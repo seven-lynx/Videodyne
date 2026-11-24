@@ -514,7 +514,7 @@ export class Broadcaster {
   }
 
   chInfo() {
-    return this.db.prepare('SELECT COALESCE(name_override, auto_name) AS name, number FROM channels WHERE id=?').get(this.id) || { name: 'WBTV', number: 0 };
+    return this.db.prepare('SELECT COALESCE(name_override, auto_name) AS name, number FROM channels WHERE id=?').get(this.id) || { name: 'Videodyne', number: 0 };
   }
 
   /** Channel logo (if one was uploaded) or the channel name, small in the corner of programmes. */

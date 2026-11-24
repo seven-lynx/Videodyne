@@ -34,3 +34,23 @@ test('the guide asks /api/epg for exactly the horizon the scheduler plans', asyn
   // and anchored on the clock, not on a hardcoded timestamp
   assert.ok(to - before >= HORIZON_HOURS * 3600 && to - before <= HORIZON_HOURS * 3600 + 5, `guide reached ${to - before}s past now`);
 });
+
+// The tuner identity is what an IPTV player prints in its source list and what an XMLTV reader records
+// as the guide's author: both travel to a third-party app, so both are pinned here (BRAND/B2).
+test('the tuner introduces itself as Videodyne to the guide and to HDHomeRun discovery', async () => {
+  const app = Fastify();
+  app.get('/api/epg', async () => ({ programmes: {} }));
+  const channels = [{ id: 1, kind: 'tv', name: 'One', number: 1 }];
+  registerIptvOut(app, { prepare: () => ({ all: () => channels }) }, () => null);
+  const epg = await app.inject({ url: '/iptv/epg.xml' });
+  const disc = await app.inject({ url: '/discover.json' });
+  const device = await app.inject({ url: '/device.xml' });
+  await app.close();
+  assert.match(epg.body, /<tv generator-info-name="Videodyne">/);
+  assert.equal(disc.json().FriendlyName, 'Videodyne');
+  assert.equal(disc.json().Manufacturer, 'Videodyne');
+  assert.equal(disc.json().DeviceAuth, 'videodyne');
+  assert.match(device.body, /<friendlyName>Videodyne<\/friendlyName>/);
+  assert.match(device.body, /<modelName>HDHR-Videodyne<\/modelName>/);
+});
+
