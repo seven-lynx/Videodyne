@@ -35,8 +35,9 @@ async function serverLyrics(db, stored) {
   if (r.synced?.length >= 2) return { synced: r.synced };
   return r.text ? parseLyrics(r.text) : null;
 }
-// media-server stream URLs carry the API key (Jellyfin) or the token and salt (Navidrome / Subsonic): never write them to the logs
-export const hideKeys = (s) => String(s).replace(/(api_?key)=[^&\s'"]+/gi, '$1=***').replace(/([?&])(t|s)=[0-9a-f]{8,}/g, '$1$2=***');
+// media-server stream URLs carry the API key (Jellyfin / Emby), the token and salt (Navidrome / Subsonic) or the
+// whole account token (Plex): never write them to the logs. One place, so a new source kind is redacted here too.
+export const hideKeys = (s) => String(s).replace(/(api_?key)=[^&\s'"]+/gi, '$1=***').replace(/([?&])(t|s)=[0-9a-f]{8,}/g, '$1$2=***').replace(/X-Plex-Token=[^&\s'"]+/gi, 'X-Plex-Token=***');
 
 const PARKED_CAP = 200;  // files the OS is holding: the live window is bounded, so this is slack, not a target
 const PARKED_TRIES = 10; // syncs a parked file is retried in before it is reported and left to the shutdown
@@ -413,8 +414,11 @@ export class Broadcaster {
         `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${af}:expansion=none:x=w*0.035:y=h*0.815:fontsize=${Math.round(H * 0.042)}:fontcolor=0xffd400:${en}` +
         `,drawtext=fontfile=${filterPath(cfg.fontFile)}:textfile=${tf}:expansion=none:x=w*0.035:y=h*0.865:fontsize=${Math.round(H * 0.05)}:fontcolor=white:${en}`;
     }
+    // a remote item (Jellyfin / Emby / Plex / archive.org) can drop its connection mid-programme; the same flags the live
+    // path uses (iptv.js openLive) make ffmpeg ride it out instead of failing the segment
+    const net = isUrl(file) ? ['-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5', '-rw_timeout', '15000000'] : [];
     const args = ['-hide_banner', '-loglevel', 'error', '-nostdin',
-      '-ss', offset.toFixed(3), '-readrate', '1', '-readrate_initial_burst', burst.toFixed(1), '-i', file];
+      '-ss', offset.toFixed(3), '-readrate', '1', '-readrate_initial_burst', burst.toFixed(1), ...net, '-i', file];
     if (!hasAudio) args.push('-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo');
     args.push('-t', dur.toFixed(3), '-map', '0:v:0', '-map', hasAudio ? `0:a:${pick?.audio || 0}` : '1:a:0',
       '-vf', this.withBug(vf, e.tail), '-af', 'aresample=48000:async=1:first_pts=0,aformat=channel_layouts=stereo', ...e.codec);

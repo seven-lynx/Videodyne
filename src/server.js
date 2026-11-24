@@ -13,11 +13,12 @@ import { scanLibrary } from './scanner.js';
 import { inferChannels, syncLiveChannels, talkPerTitle } from './channels.js';
 import { checkStreams, isUrl } from './iptv.js';
 import { discover, forgetSource, normalizeUrl } from './mediaserver.js';
+import { discoverPlex } from './plex.js';
 import { subsonicDiscover } from './navidrome.js';
 import { registerImvdb } from './imvdb.js';
 import { ensureSchedule, ensureChannelSchedule, rescheduleFuture } from './scheduler.js';
 import { probePending } from './media.js';
-import { Broadcaster } from './broadcaster.js';
+import { Broadcaster, hideKeys } from './broadcaster.js';
 import { addAdUrls, processAds, removeAd } from './ads.js';
 import { initAuth } from './auth.js';
 import { logoFile, saveLogo, removeLogo, MIME } from './logos.js';
@@ -106,7 +107,10 @@ app.get('/api/libraries', () => db.prepare(`
 
 // ---- media servers (Jellyfin / Emby) as a source of TV and films
 const isNavidrome = (b) => b?.kind === 'navidrome';
-const findSource = (b) => (isNavidrome(b) ? subsonicDiscover(b.url, b.username, b.password, normalizeUrl) : discover(b?.url, b?.token, b?.userId));
+const isPlex = (b) => b?.kind === 'plex';
+const findSource = (b) => (isPlex(b) ? discoverPlex(normalizeUrl(b.url), b.token)
+  : isNavidrome(b) ? subsonicDiscover(b.url, b.username, b.password, normalizeUrl)
+  : discover(b?.url, b?.token, b?.userId));
 const publicSource = ({ salt, token, ...rest }) => rest; // credentials never go back to the browser
 app.post('/api/sources/discover', async (req, reply) => {
   try { return publicSource(await findSource(req.body)); } catch (e) { return reply.code(400).send({ error: e.message }); }
@@ -115,7 +119,7 @@ app.post('/api/sources', async (req, reply) => {
   try {
     const d = await findSource(req.body);
     const nav = isNavidrome(req.body);
-    const kind = nav ? 'navidrome' : /emby/i.test(d.product) ? 'emby' : 'jellyfin';
+    const kind = nav ? 'navidrome' : isPlex(req.body) ? 'plex' : /emby/i.test(d.product) ? 'emby' : 'jellyfin';
     db.prepare(`INSERT INTO sources(kind,name,url,token,user_id,salt) VALUES(?,?,?,?,?,?)
       ON CONFLICT(url) DO UPDATE SET kind=excluded.kind,name=excluded.name,token=excluded.token,user_id=excluded.user_id,salt=excluded.salt`)
       .run(kind, d.name, d.url, nav ? d.token : String(req.body.token).trim(), d.userId, nav ? d.salt : null);
@@ -214,7 +218,7 @@ app.patch('/api/libraries/:id', async (req, reply) => {
 
 app.delete('/api/libraries/:id', async (req) => {
   const gone = db.prepare('SELECT name, path, type FROM libraries WHERE id=?').get(req.params.id);
-  console.log(`[libraries] removing library ${req.params.id}${gone ? ` "${gone.name}" (${gone.type}, ${gone.path.replace(/api_key=[^&]+/, 'api_key=***')})` : ' (not found)'}`); // so a removal is never a mystery
+  console.log(`[libraries] removing library ${req.params.id}${gone ? ` "${gone.name}" (${gone.type}, ${hideKeys(gone.path)})` : ' (not found)'}`); // so a removal is never a mystery
   db.prepare('DELETE FROM libraries WHERE id=?').run(req.params.id);
   inferChannels(db);
   syncLiveChannels(db); await rescheduleFuture(db);

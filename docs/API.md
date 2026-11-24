@@ -54,7 +54,7 @@ A missing or wrong credential returns `401 {"error":"login required"}`.
 | `GET /api/scan`, `POST /api/scan` | Status / start (`{libraryId?}`) |
 | `GET /api/browse?path=` | Folder browser for the setup UI |
 | `GET /api/live/presets`, `GET /api/live/summary`, `POST /api/live/recheck`, `POST /api/live/:lib/enable` | IPTV / YouTube-live sources |
-| `GET /api/sources`, `POST /api/sources`, `POST /api/sources/discover`, `DELETE /api/sources/:id` | Jellyfin, Emby and Navidrome servers. `POST` `{url, token, userId}` (Jellyfin / Emby) or `{kind:'navidrome', url, username, password}` connects and stores one; `/api/sources/discover` answers the same without storing it. The list never includes a token, and `DELETE` takes that server's libraries with it |
+| `GET /api/sources`, `POST /api/sources`, `POST /api/sources/discover`, `DELETE /api/sources/:id` | Jellyfin, Emby, Plex and Navidrome servers. `POST` `{url, token, userId}` (Jellyfin / Emby), `{kind:'plex', url, token}` (Plex — the token is the `X-Plex-Token` from any media URL) or `{kind:'navidrome', url, username, password}` connects and stores one; `/api/sources/discover` answers the same without storing it. Plex offers film and TV sections only, as `views` of type `movies` / `tv`. The list never includes a token, and `DELETE` takes that server's libraries with it |
 
 ## Managing channels
 

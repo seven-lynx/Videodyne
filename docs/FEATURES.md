@@ -64,6 +64,7 @@ The complete feature list, by area. For what's new in each version see the [rele
   - Choose how many programmes to mention and how long the slot may run; announcements never hold up a tune-in.
 - **Classic ad breaks**: mid-programme breaks of a length and frequency you set.
   - Sources: YouTube, archive.org, direct links (downloaded once with yt-dlp), or **local folders** tagged *TV* or *Movies* so trailers only play on movie channels.
+  - **archive.org items are streamed, not downloaded**: paste a `archive.org/details/...` or `/download/...` address and WBTV reads its metadata once, then plays the file straight from archive.org as it airs, so nothing is added to `config/ads`. The small h.264 copy is chosen (never the MPEG2 master), and the item's year goes into its title so era-matching works. Everything else is still downloaded once by yt-dlp.
   - **Long ad-break compilations** supported: each break plays a random chunk, like joining a recorded break in progress.
   - **Era-matched adverts**: the year is read from an ad's title or folder name (`1994`, `1990s`, `80s`) and ads from the programme's era are preferred.
   - WBTV ships with no ads; they come from you.
@@ -101,13 +102,14 @@ The complete feature list, by area. For what's new in each version see the [rele
 - YouTube live (including separate video and audio streams) is resolved with yt-dlp each time you tune in.
 - Large playlists start with the first 80 working channels enabled; enable more in bulk.
 
-## Jellyfin and Emby as a source
+## Jellyfin, Emby and Plex as a source
 
 - Setup > Libraries > *Read TV, films and music videos from Jellyfin / Emby*: enter the server address and an API key (Jellyfin: Dashboard > API Keys), then add the TV, movie and music-video libraries you want. Works with Jellyfin 12 (which dropped the old `X-Emby-Token` / `api_key`) and with older Jellyfin and Emby.
 - Titles, plots, studios, genres, ratings, cast and pictures come from the server, so channels are inferred exactly as from folders (a studio becomes a channel, a genre a themed one). Folder and server libraries can be mixed.
 - Playback reads the original files from the server over HTTP; the API key is kept on the WBTV server, is never put in an item path, and is hidden from logs.
+- **Plex** works the same way: choose *Plex*, enter the address (port 32400) and paste a token — any Plex media URL carries one as `X-Plex-Token`. It is sent as a header, never in an item path, and it is redacted from logs like the other keys. Film and TV libraries are supported; a music library says so instead of being offered.
 - If the server is down during a scan, nothing is removed. Pictures are downloaded a few hundred at a time per scan.
-- Not yet: Plex as a source, music/audiobooks from a server, and fetching subtitles through the server's own subtitle endpoint (embedded subtitles are extracted by reading the file).
+- Not yet: music or audiobooks from a media server, and fetching subtitles through the server's own subtitle endpoint (embedded subtitles are extracted by reading the file).
 
 ## Navidrome as a source (music)
 

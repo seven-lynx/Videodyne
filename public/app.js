@@ -480,25 +480,25 @@ function libTable(libs, reload, poll) {
         h('button', { class: 'sm danger', onclick: async () => { if (confirm(`Remove "${l.name}" from WBTV? (files are not touched)`)) { await api(`/api/libraries/${l.id}`, { method: 'DELETE' }); reload(); } } }, 'Remove')))));
 }
 
-/** Read libraries from a media server instead of from folders: Jellyfin / Emby (TV, films, music videos) or Navidrome (music, for the radio stations). */
+/** Read libraries from a media server instead of from folders: Jellyfin / Emby (TV, films, music videos), Plex (TV, films) or Navidrome (music, for the radio stations). */
 function addMediaServerForm(onAdded) {
-  const kind = h('select', {}, [['jellyfin', 'Jellyfin / Emby (TV, films, music videos)'], ['navidrome', 'Navidrome (music for radio)']].map(([v, l]) => h('option', { value: v }, l)));
+  const kind = h('select', {}, [['jellyfin', 'Jellyfin / Emby (TV, films, music videos)'], ['plex', 'Plex (TV, films)'], ['navidrome', 'Navidrome (music for radio)']].map(([v, l]) => h('option', { value: v }, l)));
   const url = h('input', { type: 'text', placeholder: 'Server address, e.g. 192.168.1.111:8096', style: 'flex:1;min-width:200px' });
-  const key = h('input', { type: 'password', placeholder: 'API key (Jellyfin: Dashboard > API Keys)', style: 'flex:1;min-width:200px', autocomplete: 'off' });
+  const key = h('input', { type: 'password', placeholder: 'API key, or a Plex token (X-Plex-Token)', style: 'flex:1;min-width:200px', autocomplete: 'off' });
   const user = h('input', { type: 'text', placeholder: 'Navidrome username', style: 'width:170px', autocomplete: 'off' });
   const pass = h('input', { type: 'password', placeholder: 'Password', style: 'width:150px', autocomplete: 'off' });
   const out = h('div', {});
   const show = () => {
     const nav = kind.value === 'navidrome';
     key.style.display = nav ? 'none' : ''; user.style.display = pass.style.display = nav ? '' : 'none';
-    url.placeholder = nav ? 'Server address, e.g. 192.168.1.110:4534' : 'Server address, e.g. 192.168.1.111:8096';
+    url.placeholder = nav ? 'Server address, e.g. 192.168.1.110:4534' : kind.value === 'plex' ? 'Server address, e.g. 192.168.1.111:32400' : 'Server address, e.g. 192.168.1.111:8096';
   };
   kind.onchange = show; show();
   const connect = h('button', { onclick: async () => {
     out.replaceChildren(h('div', { class: 'note' }, 'Connecting...'));
     try {
       const nav = kind.value === 'navidrome';
-      const d = await api('/api/sources', { method: 'POST', body: nav ? { kind: 'navidrome', url: url.value, username: user.value, password: pass.value } : { url: url.value, token: key.value } });
+      const d = await api('/api/sources', { method: 'POST', body: nav ? { kind: 'navidrome', url: url.value, username: user.value, password: pass.value } : { kind: kind.value, url: url.value, token: key.value } });
       key.value = ''; pass.value = ''; // the password is only used to log in once; WBTV keeps a token, not the password
       const label = (v) => (v.type === 'tv' ? 'TV shows' : v.type === 'radio' ? 'Music, as radio stations' : v.type === 'music' ? 'Music videos' : 'Movies');
       out.replaceChildren(h('div', { class: 'note' }, `Connected to ${d.name} (${d.product} ${d.version}). Add the libraries you want:`),
