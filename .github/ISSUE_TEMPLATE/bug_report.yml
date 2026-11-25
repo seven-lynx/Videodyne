@@ -28,5 +28,5 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Output of /api/status and the end of `docker logs wbtv`
+      label: Output of /api/status and the end of `docker logs videodyne`
       render: text

@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url';
 // BRAND/B3 renamed them; this file is what keeps them renamed, because nothing else in the suite
 // reads `public/` or the prose in `README.md` - a string that can go stale silently gets stale.
 //
-// Some old-name literals are deliberate and belong to another segment: the environment knobs (B4),
-// the access-key header and the database filename (B5), the container name and tmpfs path (B4), the
-// widget artefact (B8), and upstream's repository and published image, which have to keep resolving.
+// Some old-name literals are deliberate and belong to another segment: the access-key header and the
+// database filename (B5), the widget artefact (B8), the `/opt/wbtv` mount in `tools/README.md`, and
+// upstream's repository and published image, which have to keep resolving. The environment prefix,
+// the container name and the tmpfs path are deliberately *not* among them any more: they were renamed,
+// and the last two tests here are what keeps them renamed and keeps the pair in step.
 // Two more are this rename's own migration: the old preference keys are still *read* so a returning
 // viewer keeps their theme. The scan strips exactly those before it looks, so anything else is a
 // regression rather than noise.
@@ -22,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
-const OWNED = /WBTV_[A-Z]+|WB2024\/WBTV|wb20244\/wbtv|WBTV-Tizen\.wgt|x-wbtv-key|wbtv\.db|docker logs wbtv|\/tmp\/wbtv|\/opt\/wbtv|container_name: wbtv|--name wbtv|\n\s+wbtv:|wbtv-theme|wbtv-\$\{key\}/g;
+const OWNED = /WB2024\/WBTV|wb20244\/wbtv|WBTV-Tizen\.wgt|x-wbtv-key|wbtv\.db|\/opt\/wbtv|wbtv-theme|wbtv-\$\{key\}/g;
 
 const SURFACES = [
   'public/index.html',
@@ -65,3 +67,35 @@ test('a stored theme, filter and fullscreen choice survives the renamed keys', (
   assert.deepEqual(app.match(/localStorage\.setItem\(['"]/g), null,
     'no preference is written under a literal key - the writer owns the new one');
 });
+
+// The environment prefix is identity too: it is what an operator types and what `docker logs` shows.
+// It is also the one rename where a half-done job costs a viewer a channel - a compose file that
+// mounts `/tmp/wbtv` while the server writes to `/tmp/videodyne` sends the segments to a full RAM disk -
+// so the path is asserted as a pair (default, image, compose) rather than as three separate greps.
+const STALE = /WBTV_|docker logs wbtv|\/tmp\/wbtv|container_name: wbtv|--name wbtv/;
+
+test('the environment prefix, the container name and the tmpfs path are the new ones', () => {
+  const surfaces = [...SURFACES, 'docker-compose.yml', 'Dockerfile'];
+  const stale = surfaces.filter((f) => STALE.test(read(f)));
+  assert.deepEqual(stale, [], 'surfaces still carrying a pre-rename name');
+  assert.match(read('docker-compose.yml'), /container_name: videodyne/, 'the container is named after the product');
+});
+
+test('every knob keeps the old name behind the new one, and the container agrees with the default', () => {
+  const cfgSrc = read('src/config.js');
+  for (const knob of ['CONFIG', 'TMP', 'BROWSE_ROOTS', 'WIDTH', 'HEIGHT', 'CRF', 'PRESET', 'FONT', 'SCAN_CONCURRENCY']) {
+    assert.match(cfgSrc, new RegExp(`env\\.VIDEODYNE_${knob} \\|\\| env\\.WBTV_${knob}`), `${knob} is read under both names`);
+  }
+  // The three reads outside `config.js` are the documented exceptions, and they carry the same fallback.
+  assert.match(read('src/hw.js'), /VIDEODYNE_HWACCEL \|\| process\.env\.WBTV_HWACCEL/, 'the GPU override');
+  assert.match(read('src/hw.js'), /VIDEODYNE_VAAPI_DEVICE \|\| process\.env\.WBTV_VAAPI_DEVICE/, 'the render node');
+  assert.match(read('src/broadcaster.js'), /VIDEODYNE_DEBUG \|\| process\.env\.WBTV_DEBUG/, 'the verbose log switch');
+  const tmp = /env\.VIDEODYNE_TMP \|\| env\.WBTV_TMP \|\| '([^']+)'/.exec(cfgSrc);
+  assert.ok(tmp, 'the tmp dir default is spelled once');
+  assert.ok(read('docker-compose.yml').includes(`${tmp[1]}:size=`), 'the compose tmpfs mounts that path');
+  assert.ok(read('Dockerfile').includes(`VIDEODYNE_TMP=${tmp[1]}`), 'the image sets that path');
+  const cfgDir = /env\.VIDEODYNE_CONFIG \|\| env\.WBTV_CONFIG \|\| '([^']+)'/.exec(cfgSrc);
+  assert.ok(cfgDir, 'the config dir default is spelled once');
+  assert.ok(read('Dockerfile').includes(`VIDEODYNE_CONFIG=${cfgDir[1]}`), 'the image and the default agree');
+});
+

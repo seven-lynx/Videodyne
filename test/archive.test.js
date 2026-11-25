@@ -5,7 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-ao-'));
-process.env.WBTV_CONFIG = dir;
+// The new name in front; `test/plex.test.js` is the one that still sets the old one, so both spellings
+// are exercised by the suite rather than only documented.
+process.env.VIDEODYNE_CONFIG = dir;
 const { openDb } = await import('../src/db.js');
 const { parseArchiveUrl, pickVideoFile, secondsOf, resolveItem, downloadUrl } = await import('../src/archive.js');
 const { addAdUrls, processAds, removeAd } = await import('../src/ads.js');

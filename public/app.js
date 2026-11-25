@@ -791,7 +791,7 @@ async function tabSettings(body) {
     boolField(s, 'movieStudioChannels', 'Movie studio channels', 'e.g. a Warner Bros. film channel.'),
     numField(s, 'movieStudioMinFilms', 'Films needed for a studio channel', '', { min: 1 }),
     boolField(s, 'movieDecadeChannels', 'Movie decade channels', 'e.g. 1990s Cinema.'),
-    h('p', { class: 'note' }, 'Changes rebuild the channels and re-plan everything that has not aired yet. Stream quality is set with environment variables (WBTV_WIDTH, WBTV_HEIGHT, WBTV_CRF).'));
+    h('p', { class: 'note' }, 'Changes rebuild the channels and re-plan everything that has not aired yet. Stream quality is set with environment variables (VIDEODYNE_WIDTH, VIDEODYNE_HEIGHT, VIDEODYNE_CRF).'));
 }
 
 const THEMES = [

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { cfg } from './config.js';
 
-const DRI = process.env.WBTV_VAAPI_DEVICE || '/dev/dri/renderD128';
+const DRI = process.env.VIDEODYNE_VAAPI_DEVICE || process.env.WBTV_VAAPI_DEVICE || '/dev/dri/renderD128';
 
 /** What the broadcaster should use right now. `active` is 'software' | 'vaapi' | 'nvenc'. */
 export const hw = { requested: 'auto', active: 'software', note: 'not checked yet', device: DRI };
@@ -53,7 +53,7 @@ const tests = {
 
 /** Choose an encoder. mode: 'auto' | 'none' | 'vaapi' | 'nvenc'. */
 export async function detectHw(mode = 'auto') {
-  mode = process.env.WBTV_HWACCEL || mode || 'auto';
+  mode = process.env.VIDEODYNE_HWACCEL || process.env.WBTV_HWACCEL || mode || 'auto';
   hw.requested = mode;
   if (mode === 'none') { Object.assign(hw, { active: 'software', note: 'Hardware encoding is switched off.' }); return hw; }
   const order = mode === 'auto' ? ['vaapi', 'nvenc'] : [mode];

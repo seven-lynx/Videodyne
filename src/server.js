@@ -232,7 +232,7 @@ app.get('/api/scan', () => {
   return { ...scan, autoScan: s.autoScan, nextAuto: s.autoScan && !scan.running && base ? base + s.scanIntervalMinutes * 60000 : null };
 });
 
-// folder browser (restricted to WBTV_BROWSE_ROOTS)
+// folder browser (restricted to VIDEODYNE_BROWSE_ROOTS)
 function safePath(p) {
   if (!p || typeof p !== 'string') return null;
   const real = path.resolve(p);

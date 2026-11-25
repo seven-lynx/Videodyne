@@ -111,7 +111,7 @@ export class Broadcaster {
     if (name === 'seg3') {
       const m = this.marks, f = (k) => (k in m ? (m[k] / 1000).toFixed(1) + 's' : '-');
       const slow = m.seg3 > 6000;
-      if (slow || process.env.WBTV_DEBUG) console.log(`[ch${this.id}] tune-in ${f('seg3')}${slow ? ' (slow)' : ''}: schedule ${f('block')}, file probe ${f('probe')}, ffmpeg start ${f('spawn')}, 1st segment ${f('seg1')} [${this.firstKind}]`);
+      if (slow || process.env.VIDEODYNE_DEBUG || process.env.WBTV_DEBUG) console.log(`[ch${this.id}] tune-in ${f('seg3')}${slow ? ' (slow)' : ''}: schedule ${f('block')}, file probe ${f('probe')}, ffmpeg start ${f('spawn')}, 1st segment ${f('seg1')} [${this.firstKind}]`);
     }
   }
 
@@ -137,7 +137,7 @@ export class Broadcaster {
     if (!this.viewers.size) this.stop();
   }
 
-  dlog(...a) { if (process.env.WBTV_DEBUG) console.log(`[bc ${this.tag}]`, ...a); }
+  dlog(...a) { if (process.env.VIDEODYNE_DEBUG || process.env.WBTV_DEBUG) console.log(`[bc ${this.tag}]`, ...a); }
 
   stop() {
     if (this.stopped) return;

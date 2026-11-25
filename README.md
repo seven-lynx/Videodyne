@@ -30,8 +30,8 @@
 ## Quick start: one container, one volume
 
 ```bash
-docker run -d --name wbtv --restart unless-stopped -p 8420:8080 -e TZ=Europe/London \
-  -v "$PWD/config:/config" -v /path/to/your/media:/media:ro --tmpfs /tmp/wbtv:size=2g \
+docker run -d --name videodyne --restart unless-stopped -p 8420:8080 -e TZ=Europe/London \
+  -v "$PWD/config:/config" -v /path/to/your/media:/media:ro --tmpfs /tmp/videodyne:size=2g \
   wb20244/wbtv:latest
 ```
 
@@ -42,9 +42,9 @@ Change `/path/to/your/media` to your media folder (it is mounted **read-only**, 
 
 ```yaml
 services:
-  wbtv:
+  videodyne:
     image: wb20244/wbtv:latest
-    container_name: wbtv
+    container_name: videodyne
     restart: unless-stopped
     ports:
       - 8420:8080
@@ -54,7 +54,7 @@ services:
       - ./config:/config              # database, covers, voices, downloaded ads
       - /path/to/your/media:/media:ro # your media, read-only
     tmpfs:
-      - /tmp/wbtv:size=2g             # live stream segments + the pause/rewind buffer (RAM)
+      - /tmp/videodyne:size=2g        # live stream segments + the pause/rewind buffer (RAM)
 ```
 
 ```bash
@@ -71,7 +71,7 @@ Then:
 That's it. Everything else (ad breaks, voice-overs, themes, idents, the Android TV app) is optional and one click away.
 
 **Good to know**
-- Mount your media at `/media` (or `/mnt`, `/data`) so the folder browser can see it. Other places: set `WBTV_BROWSE_ROOTS`.
+- Mount your media at `/media` (or `/mnt`, `/data`) so the folder browser can see it. Other places: set `VIDEODYNE_BROWSE_ROOTS`.
 - You need roughly **one CPU core per channel being watched** (every watched channel is encoded live, and all viewers of a channel share one encode). Details in [performance](#performance).
 - Works on Unraid, Synology/QNAP (Container Manager), TrueNAS, Proxmox LXC and plain Linux. Images are published for **amd64**; an **arm64** build (Raspberry Pi 4/5, Apple silicon) is produced by CI, see [Status](#status).
 - Media can be anywhere Docker can read, including network shares. Rescans are incremental and quick.
@@ -379,7 +379,7 @@ Rough guide: **one CPU core per channel being watched at 720p**. If the machine 
 - **Announcement voices:** the high-quality voices sound best but need about three times the CPU to generate. The default voices are light.
 
 Open `http://<server>:8420/api/status` to see what the server is doing right now (channels running, viewers, CPU load, memory, queued voice-overs).
-Videodyne logs a line such as `tune-in 7.4s (slow): ...` whenever a channel takes more than 6 seconds to start, with a breakdown (`docker logs wbtv`); set `WBTV_DEBUG=1` to log every start.
+Videodyne logs a line such as `tune-in 7.4s (slow): ...` whenever a channel takes more than 6 seconds to start, with a breakdown (`docker logs videodyne`); set `VIDEODYNE_DEBUG=1` to log every start.
 
 ### Hardware encoding (optional)
 
@@ -395,11 +395,11 @@ Scaling and on-screen captions still run on the CPU; only the H.264 encode moves
 | Environment variable | Default | |
 |---|---|---|
 | `TZ` | `UTC` | Your timezone, so the guide and day-parting match your clock |
-| `WBTV_WIDTH` / `WBTV_HEIGHT` | `1280` / `720` | Stream resolution (also in Settings > Stream size) |
-| `WBTV_CRF` | `23` | x264 quality (lower = better and bigger) |
-| `WBTV_PRESET` | `veryfast` | x264 speed preset |
-| `WBTV_BROWSE_ROOTS` | `/mnt,/media,/data` | Folders the in-app folder browser may show |
-| `WBTV_DEBUG` | off | Log every channel start-up with timings |
+| `VIDEODYNE_WIDTH` / `VIDEODYNE_HEIGHT` | `1280` / `720` | Stream resolution (also in Settings > Stream size) |
+| `VIDEODYNE_CRF` | `23` | x264 quality (lower = better and bigger) |
+| `VIDEODYNE_PRESET` | `veryfast` | x264 speed preset |
+| `VIDEODYNE_BROWSE_ROOTS` | `/mnt,/media,/data` | Folders the in-app folder browser may show |
+| `VIDEODYNE_DEBUG` | off | Log every channel start-up with timings |
 | `PIPER_BIN` / `PIPER_VOICES` | `/opt/piper/piper` / `/opt/piper/voices` | Speech engine and voice folder (already in the image). Extra voices install to `/config/voices` |
 
 ### Security
@@ -426,7 +426,7 @@ Videodyne is young, maintained by one person, and developed on real hardware (a 
 | Hand-built schedules / drag-and-drop channel editor | ❌ By design for now: channels are inferred. Overrides for names, numbers and on/off exist |
 | Subtitles and audio-track choice | ✅ Preferred-language audio, and subtitles burned into the picture when needed (text subtitles, from a file beside the video or inside it). Bitmap subtitles (PGS/DVD) are not supported yet |
 
-If something misbehaves, please [open an issue](https://github.com/WB2024/WBTV/issues/new/choose) and include the output of `http://<server>:8420/api/status` and `docker logs wbtv`.
+If something misbehaves, please [open an issue](https://github.com/WB2024/WBTV/issues/new/choose) and include the output of `http://<server>:8420/api/status` and `docker logs videodyne`.
 
 ## FAQ
 
@@ -450,7 +450,7 @@ If something misbehaves, please [open an issue](https://github.com/WB2024/WBTV/i
 
 | Problem | Try |
 |---|---|
-| The guide is empty | Add a library in **Setup > Libraries** and wait for the first scan; check the folder is mounted under `/media` (or set `WBTV_BROWSE_ROOTS`) |
+| The guide is empty | Add a library in **Setup > Libraries** and wait for the first scan; check the folder is mounted under `/media` (or set `VIDEODYNE_BROWSE_ROOTS`) |
 | Channels are slow to start | See [Performance](#performance): lower the stream size, use hardware encoding, and check `/api/status` for what else is running |
 | Cover art is missing on some radio tracks | Art is read from `cover.jpg`/`folder.jpg` or from the file itself, and older libraries fill in gradually over the next scans |
 | A live/YouTube channel shows as dead | Streams are health-checked and resolved with yt-dlp; check the source plays elsewhere, and that the container can reach the internet |

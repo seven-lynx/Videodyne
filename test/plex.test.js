@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-plex-'));
+// Deliberately the *old* knob name: this file is the live proof that a container still carrying
+// `WBTV_CONFIG` keeps working across the rename. The new name is proven in `test/archive.test.js`.
 process.env.WBTV_CONFIG = dir;
 const { openDb } = await import('../src/db.js');
 const { safeRemovals } = await import('../src/scanner.js');

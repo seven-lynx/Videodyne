@@ -3,7 +3,7 @@
 Thanks for wanting to help. Bug reports, ideas, documentation fixes and pull requests are all welcome.
 
 ## Reporting a bug
-Open an [issue](https://github.com/WB2024/WBTV/issues/new/choose) and include your Videodyne version, how you run it, and the output of `http://<server>:8420/api/status` and `docker logs wbtv`.
+Open an [issue](https://github.com/WB2024/WBTV/issues/new/choose) and include your Videodyne version, how you run it, and the output of `http://<server>:8420/api/status` and `docker logs videodyne`.
 
 ## Running it locally
 Needs Node 22.13+ (24 recommended), ffmpeg and ffprobe on your PATH.
@@ -11,7 +11,7 @@ Needs Node 22.13+ (24 recommended), ffmpeg and ffprobe on your PATH.
 ```bash
 npm ci
 npm test                         # unit tests
-PORT=8099 WBTV_CONFIG=./cfg WBTV_TMP=./tmp WBTV_BROWSE_ROOTS=/path/to/media node src/server.js
+PORT=8099 VIDEODYNE_CONFIG=./cfg VIDEODYNE_TMP=./tmp VIDEODYNE_BROWSE_ROOTS=/path/to/media node src/server.js
 ```
 
 Piper (announcement voices) and yt-dlp are optional for local development; without them announcements and YouTube sources are simply skipped.
