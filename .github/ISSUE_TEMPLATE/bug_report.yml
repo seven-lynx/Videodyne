@@ -11,7 +11,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: WBTV version
+      label: Videodyne version
       description: Shown at http://<server>:8420/api/status
     validations: { required: true }
   - type: dropdown

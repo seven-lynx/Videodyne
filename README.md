@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Images/Assets/1.png" alt="WBTV - Live TV, your way" width="640">
+  <img src="Images/Assets/1.png" alt="Videodyne - Live TV, your way" width="640">
 </p>
 
 <h3 align="center">Your own media, broadcast as real live TV.<br>No setup, no schedules to build. Point it at your library and press play.</h3>
@@ -13,17 +13,17 @@
 </p>
 
 <p align="center">
-  <a href="https://buymeacoffee.com/succinctrecords"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20WBTV-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" height="48"></a>
+  <a href="https://buymeacoffee.com/succinctrecords"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20Videodyne-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" height="48"></a>
 </p>
 
 <p align="center">
   <a href="https://launchorbit.co" target="_blank" rel="noopener noreferrer"><img src="https://launchorbit.co/api/badge?theme=dark&v=9" alt="View this product on Launch Orbit" width="240" height="64" /></a>
 </p>
 
-<p align="center"><b>WBTV is free, open source and always will be. If it brings you joy, a coffee keeps the updates coming. ☕</b></p>
+<p align="center"><b>Videodyne is free, open source and always will be. If it brings you joy, a coffee keeps the updates coming. ☕</b></p>
 
 <p align="center">
-  <img src="Images/Screenshots/guide-browse.gif" alt="The WBTV guide: a Freeview-style grid built from your own library, with filters for TV, Movies, Music, Radio, Live and Networks" width="900"><br>
+  <img src="Images/Screenshots/guide-browse.gif" alt="The Videodyne guide: a Freeview-style grid built from your own library, with filters for TV, Movies, Music, Radio, Live and Networks" width="900"><br>
   <sub>The guide, browsing and filtering a real library: TV, Movies, Music, Radio, Live and Networks.</sub>
 </p>
 
@@ -35,7 +35,7 @@ docker run -d --name wbtv --restart unless-stopped -p 8420:8080 -e TZ=Europe/Lon
   wb20244/wbtv:latest
 ```
 
-Change `/path/to/your/media` to your media folder (it is mounted **read-only**, WBTV never changes your files) and your timezone. That's the whole install.
+Change `/path/to/your/media` to your media folder (it is mounted **read-only**, Videodyne never changes your files) and your timezone. That's the whole install.
 
 <details>
 <summary>Prefer Docker Compose?</summary>
@@ -80,7 +80,7 @@ That's it. Everything else (ad breaks, voice-overs, themes, idents, the Android 
 
 ## What is it?
 
-Remember flicking through the channels, landing on something halfway through, and just *watching it*? WBTV brings that back using the
+Remember flicking through the channels, landing on something halfway through, and just *watching it*? Videodyne brings that back using the
 library you already own.
 
 It scans your folders, reads your `.nfo` tags, and **builds the channels itself**: every studio becomes a channel (*BBC One*, *Channel 4*...),
@@ -96,12 +96,12 @@ on *right now*. The same way you did in 1998.
 </tr>
 </table>
 
-## Why people switch to WBTV
+## Why people switch to Videodyne
 
 If you have tried ErsatzTV, Tunarr, FieldStation42 or similar, you know the drill: build every channel by hand, craft every schedule, then wire it up
-to something else to watch it. WBTV does it the other way round.
+to something else to watch it. Videodyne does it the other way round.
 
-| | **WBTV** | Typical "fake TV" tools |
+| | **Videodyne** | Typical "fake TV" tools |
 |---|---|---|
 | Channels | **Built automatically** from your studio and genre tags | You create each one |
 | First run | Add a folder, watch TV | Channels, schedules, sources, players to configure |
@@ -118,9 +118,9 @@ to something else to watch it. WBTV does it the other way round.
 
 ## How channels are built
 
-You don't make channels. WBTV works them out from the tags you already have:
+You don't make channels. Videodyne works them out from the tags you already have:
 
-| Your library | What WBTV creates |
+| Your library | What Videodyne creates |
 |---|---|
 | TV shows tagged `<studio>BBC One</studio>` | A **BBC One** channel (a show can sit on several studio channels) |
 | Shows with no big studio | Themed genre channels, e.g. **The Spooky Channel** for Horror |
@@ -154,13 +154,13 @@ Rename, renumber or switch off anything in **Setup**. Your edits survive rescans
 
 **Works with everything**
 - 🔌 **Tuner output**: HDHomeRun emulation, an **M3U playlist** and **XMLTV guide** for Plex, Jellyfin, Emby, TiviMate, VLC, Kodi and more
-- 🗄️ **Jellyfin, Emby, Plex and Navidrome as a source**: connect with an API key or a Plex token (or a Navidrome login) and WBTV builds channels from those libraries too. Folders still work and you can mix both: [which is better for you?](#folders-or-a-media-server)
+- 🗄️ **Jellyfin, Emby, Plex and Navidrome as a source**: connect with an API key or a Plex token (or a Navidrome login) and Videodyne builds channels from those libraries too. Folders still work and you can mix both: [which is better for you?](#folders-or-a-media-server)
 - 🌐 **Live TV**: add any M3U/M3U8 playlist, HLS stream, or YouTube live link
 - 📱 **Native Android TV / Fire TV app** (Kotlin, Compose, Media3) with a full on-TV settings screen, and a **[Samsung (Tizen) TV app](#samsung-tv-app)**, plus a **[desktop client](desktop/README.md)** for Windows and Linux
 - 🔒 **Optional password and access key**, and a documented [HTTP API](docs/API.md)
 - ⚡ **Hardware encoding** (Intel/AMD VAAPI, NVIDIA NVENC) with an automatic self-test and CPU fallback
 
-> The complete list of everything WBTV does is in **[docs/FEATURES.md](docs/FEATURES.md)**.
+> The complete list of everything Videodyne does is in **[docs/FEATURES.md](docs/FEATURES.md)**.
 
 <p align="center">
   <img src="Images/Screenshots/coming-up-next.gif" alt="A programme with the channel name in the corner, then the UP NEXT announcement over a clip from the next programme" width="640"><br>
@@ -188,7 +188,7 @@ Rename, renumber or switch off anything in **Setup**. Your edits survive rescans
 ## Setup guide
 
 <p align="center">
-  <img src="Images/Screenshots/web-setup-libraries.jpg" alt="Libraries: point WBTV at your folders" width="48%">
+  <img src="Images/Screenshots/web-setup-libraries.jpg" alt="Libraries: point Videodyne at your folders" width="48%">
   <img src="Images/Screenshots/web-setup-channels.jpg" alt="Channels: everything that was built for you, ready to rename" width="48%">
 </p>
 <p align="center">
@@ -231,7 +231,7 @@ Rename, renumber or switch off anything in **Setup**. Your edits survive rescans
 
 **Cover art** comes from a `cover.jpg` / `folder.jpg` in the album folder or from the picture embedded in the files (read once per album). Spoken-word stations read the tags in your files (title, show or book, author, date, track number, description) and fall back to folder names. Like a real broadcast, you join mid-episode.
 
-Big playlists (more than 80 streams) start with the first 80 *working* channels switched on; use the **Channels** tab search box and *Enable shown* to switch on more, or *Enable all working* on the Live TV tab. The built-in suggestions point at public community lists of free streams (not run by WBTV), so availability changes and some are region-locked. YouTube live links are resolved with yt-dlp each time you tune in.
+Big playlists (more than 80 streams) start with the first 80 *working* channels switched on; use the **Channels** tab search box and *Enable shown* to switch on more, or *Enable all working* on the Live TV tab. The built-in suggestions point at public community lists of free streams (not run by Videodyne), so availability changes and some are region-locked. YouTube live links are resolved with yt-dlp each time you tune in.
 
 <p align="center">
   <img src="Images/Screenshots/web-guide-filters.jpg" alt="Filter chips: Movies" width="80%">
@@ -241,15 +241,15 @@ Big playlists (more than 80 streams) start with the first 80 *working* channels 
 
 ### Find and download music videos (optional)
 
-Setup > **Music videos** can look up each artist in your music library on [IMVDb](https://imvdb.com/developers/api) (bring your own free app key), show which of their videos you already have, and download the rest into your Music Video folder with the right name, year and genre. It needs a WBTV password and that one folder mounted **writable** (drop the `:ro` on just that volume). See [docs/FEATURES.md](docs/FEATURES.md#music-video-discovery-and-download-imvdb-optional).
+Setup > **Music videos** can look up each artist in your music library on [IMVDb](https://imvdb.com/developers/api) (bring your own free app key), show which of their videos you already have, and download the rest into your Music Video folder with the right name, year and genre. It needs a Videodyne password and that one folder mounted **writable** (drop the `:ro` on just that volume). See [docs/FEATURES.md](docs/FEATURES.md#music-video-discovery-and-download-imvdb-optional).
 
 ### Tidy your music videos (optional)
 
-Music videos from YouTube usually carry an upload date as their "year" and a messy file name, which gives you one or two dull channels. WBTV ships a small tool that renames them to `Artist - Title`, writes proper `.nfo` files with the real release year and genre (taken from your own music library), and sets duplicate copies aside. It is a dry run until you say `--apply`, and everything can be undone. See [tools/README.md](tools/README.md).
+Music videos from YouTube usually carry an upload date as their "year" and a messy file name, which gives you one or two dull channels. Videodyne ships a small tool that renames them to `Artist - Title`, writes proper `.nfo` files with the real release year and genre (taken from your own music library), and sets duplicate copies aside. It is a dry run until you say `--apply`, and everything can be undone. See [tools/README.md](tools/README.md).
 
 ## Folders or a media server?
 
-WBTV can read your library two ways, and you can mix them. **Folders are the default and the best-tested route.** Reading from a media server is an option for when folders aren't practical. Neither is "better" in general, so here is an honest comparison to help you choose.
+Videodyne can read your library two ways, and you can mix them. **Folders are the default and the best-tested route.** Reading from a media server is an option for when folders aren't practical. Neither is "better" in general, so here is an honest comparison to help you choose.
 
 | | **Folders (direct)** | **Media server (Jellyfin / Emby for TV, films, music videos and music; Plex for TV and films; Navidrome for music)** |
 |---|---|---|
@@ -258,22 +258,22 @@ WBTV can read your library two ways, and you can mix them. **Folders are the def
 | **Network use** | None | Every watched channel pulls its full bitrate across your network (fine on gigabit) |
 | **Scanning** | Reads files and `.nfo` tags, probes durations. Slower the first time, incremental after | Usually faster: one API call per 500 items, because the server already indexed everything. Pictures download a few hundred per scan |
 | **Metadata** | As good as your `.nfo` tags and folder names | The server's metadata, often richer. Studios and genres can differ from your `.nfo` tags, so **channel names and numbers can change** |
-| **Subtitles and lyrics beside the file** (`Movie.en.srt`, `Song.lrc`) | Found automatically | Not visible to WBTV. Embedded subtitles work but are extracted by reading the whole file over HTTP. Navidrome supplies its own lyrics instead |
+| **Subtitles and lyrics beside the file** (`Movie.en.srt`, `Song.lrc`) | Found automatically | Not visible to Videodyne. Embedded subtitles work but are extracted by reading the whole file over HTTP. Navidrome supplies its own lyrics instead |
 | **If the server is down** | Unaffected | Its channels can't play until it's back, and a revoked key stops them |
-| **Needs the files mounted into WBTV** | Yes | No, so WBTV can run on a different machine from your media |
-| **Moving parts** | One | Two (WBTV plus the server), and a key or login to keep valid |
+| **Needs the files mounted into Videodyne** | Yes | No, so Videodyne can run on a different machine from your media |
+| **Moving parts** | One | Two (Videodyne plus the server), and a key or login to keep valid |
 | **Switching later** | | Items get new IDs, so the schedule re-plans. Replace a library rather than adding the same content twice, or it will appear twice |
 
-**Choose folders if** your media is already mounted where WBTV runs, your `.nfo` tags give you good channels, or you want the fewest moving parts.
-**Choose a media server if** WBTV runs somewhere that can't see your files, your tags are sparse and you'd rather use the server's metadata, or you'd like one place to manage everything.
+**Choose folders if** your media is already mounted where Videodyne runs, your `.nfo` tags give you good channels, or you want the fewest moving parts.
+**Choose a media server if** Videodyne runs somewhere that can't see your files, your tags are sparse and you'd rather use the server's metadata, or you'd like one place to manage everything.
 
-**Navidrome (music).** Add it under *Setup > Libraries > Or read libraries from a media server*: enter the address and your Navidrome login. WBTV keeps a token, not your password. Each album's cover art and the songs' lyrics (time-synced where the server has them) come from Navidrome, which avoids guessing from file tags.
+**Navidrome (music).** Add it under *Setup > Libraries > Or read libraries from a media server*: enter the address and your Navidrome login. Videodyne keeps a token, not your password. Each album's cover art and the songs' lyrics (time-synced where the server has them) come from Navidrome, which avoids guessing from file tags.
 
-**Plex (TV and films).** Choose *Plex* in the same place, enter the address (port 32400) and paste a token: any Plex media URL carries one as `X-Plex-Token`, and that is the only credential WBTV needs. It is sent as a header, kept on the WBTV server and redacted from logs, exactly like a Jellyfin key. Film and TV libraries are supported; music sections say so rather than being added. Audiobookshelf (audiobooks and podcasts) is not supported yet.
+**Plex (TV and films).** Choose *Plex* in the same place, enter the address (port 32400) and paste a token: any Plex media URL carries one as `X-Plex-Token`, and that is the only credential Videodyne needs. It is sent as a header, kept on the Videodyne server and redacted from logs, exactly like a Jellyfin key. Film and TV libraries are supported; music sections say so rather than being added. Audiobookshelf (audiobooks and podcasts) is not supported yet.
 
-## Use WBTV in Plex, Jellyfin, TiviMate and other players
+## Use Videodyne in Plex, Jellyfin, TiviMate and other players
 
-WBTV can act as a TV tuner, so every channel (with its ads and announcements) shows up in the apps you already use.
+Videodyne can act as a TV tuner, so every channel (with its ads and announcements) shows up in the apps you already use.
 
 | You want to use | Add this |
 |---|---|
@@ -286,7 +286,7 @@ The HDHomeRun emulation serves a normal MPEG-TS stream without re-encoding, so i
 ## Android TV app
 
 <p align="center">
-  <img src="Images/Assets/2.png" alt="WBTV app icon" width="120">
+  <img src="Images/Assets/2.png" alt="Videodyne app icon" width="120">
 </p>
 
 A native Kotlin / Jetpack Compose / Media3 app. It opens on your last channel, like switching a TV on, and is built for the remote. Download the APK from the
@@ -343,7 +343,7 @@ Samsung TVs only run signed apps. Download `WBTV-Tizen.wgt` from the [Tizen rele
 ## Themes
 
 <p align="center">
-  <img src="Images/Screenshots/themes.gif" alt="WBTV cycling through its nine themes" width="800"><br>
+  <img src="Images/Screenshots/themes.gif" alt="Videodyne cycling through its nine themes" width="800"><br>
   <sub>Nine themes, switchable any time, on the web and on Android TV.</sub>
 </p>
 
@@ -379,11 +379,11 @@ Rough guide: **one CPU core per channel being watched at 720p**. If the machine 
 - **Announcement voices:** the high-quality voices sound best but need about three times the CPU to generate. The default voices are light.
 
 Open `http://<server>:8420/api/status` to see what the server is doing right now (channels running, viewers, CPU load, memory, queued voice-overs).
-WBTV logs a line such as `tune-in 7.4s (slow): ...` whenever a channel takes more than 6 seconds to start, with a breakdown (`docker logs wbtv`); set `WBTV_DEBUG=1` to log every start.
+Videodyne logs a line such as `tune-in 7.4s (slow): ...` whenever a channel takes more than 6 seconds to start, with a breakdown (`docker logs wbtv`); set `WBTV_DEBUG=1` to log every start.
 
 ### Hardware encoding (optional)
 
-Settings > Video encoding is **Automatic** by default: WBTV runs a real test encode and silently falls back to the CPU if the GPU is not usable, and the Settings page tells you which one is in use.
+Settings > Video encoding is **Automatic** by default: Videodyne runs a real test encode and silently falls back to the CPU if the GPU is not usable, and the Settings page tells you which one is in use.
 
 - **Intel / AMD (VAAPI):** add `devices: ["/dev/dri:/dev/dri"]` to the compose service (on Proxmox LXC, pass `/dev/dri/renderD128` through to the container first).
 - **NVIDIA (NVENC):** install the NVIDIA container toolkit and add `runtime: nvidia` with `NVIDIA_VISIBLE_DEVICES=all` and `NVIDIA_DRIVER_CAPABILITIES=video,compute,utility`.
@@ -404,13 +404,13 @@ Scaling and on-screen captions still run on the CPU; only the H.264 encode moves
 
 ### Security
 
-By default WBTV has **no login**: it is built for a home network. If you open it up (or just want a lock on it), turn on a password in **Setup > Settings > Security**.
+By default Videodyne has **no login**: it is built for a home network. If you open it up (or just want a lock on it), turn on a password in **Setup > Settings > Security**.
 Browsers log in once; the Android TV app, IPTV players and Plex/Jellyfin use an **access key** shown on the same page. Don't expose any self-hosted app to the internet over plain http;
-put it behind HTTPS with a reverse proxy such as Caddy or Nginx Proxy Manager. Your media is mounted read-only, and WBTV never writes to it. The full API is documented in [docs/API.md](docs/API.md).
+put it behind HTTPS with a reverse proxy such as Caddy or Nginx Proxy Manager. Your media is mounted read-only, and Videodyne never writes to it. The full API is documented in [docs/API.md](docs/API.md).
 
 ## Status
 
-WBTV is young, maintained by one person, and developed on real hardware (a Proxmox LXC and a Fire TV). Here is exactly where it stands:
+Videodyne is young, maintained by one person, and developed on real hardware (a Proxmox LXC and a Fire TV). Here is exactly where it stands:
 
 | Area | State |
 |---|---|
@@ -430,11 +430,11 @@ If something misbehaves, please [open an issue](https://github.com/WB2024/WBTV/i
 
 ## FAQ
 
-**Does it change or move my files?** No. Media is mounted read-only. WBTV stores its own database, covers and downloaded ads in `/config`.
+**Does it change or move my files?** No. Media is mounted read-only. Videodyne stores its own database, covers and downloaded ads in `/config`.
 
-**Do I need Plex or Jellyfin?** No. WBTV reads folders directly. It can also read a Jellyfin, Emby or Plex library through the server's API, and *feed* Plex, Jellyfin and Emby as a Live TV tuner.
+**Do I need Plex or Jellyfin?** No. Videodyne reads folders directly. It can also read a Jellyfin, Emby or Plex library through the server's API, and *feed* Plex, Jellyfin and Emby as a Live TV tuner.
 
-**Do I have to tag everything with `.nfo` files?** No, but tags make the channels much better. Kodi/Jellyfin/Sonarr/Radarr-style `.nfo` files are read (studio, genre, plot, cast, rating). Without them WBTV falls back to folder and file names.
+**Do I have to tag everything with `.nfo` files?** No, but tags make the channels much better. Kodi/Jellyfin/Sonarr/Radarr-style `.nfo` files are read (studio, genre, plot, cast, rating). Without them Videodyne falls back to folder and file names.
 
 **Does it need a GPU?** No. It runs on the CPU. A GPU lets you run more channels at once.
 
@@ -442,7 +442,7 @@ If something misbehaves, please [open an issue](https://github.com/WB2024/WBTV/i
 
 **Is it really free? What's the catch?** There is none. It's MIT licensed and will stay free. If you like it, you can [buy me a coffee](https://buymeacoffee.com/succinctrecords).
 
-**Where do the ads come from?** From you: YouTube / archive.org / direct links (downloaded once with yt-dlp) or local folders. WBTV ships with none.
+**Where do the ads come from?** From you: YouTube / archive.org / direct links (downloaded once with yt-dlp) or local folders. Videodyne ships with none.
 
 **Does the voice use an AI service?** No. Announcements are generated offline on your own machine with [Piper](https://github.com/rhasspy/piper). Nothing leaves your network.
 
@@ -472,12 +472,12 @@ Dockerfile   Node 24 + ffmpeg + yt-dlp + Piper (speech); multi-arch (amd64, arm6
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## ☕ Support WBTV
+## ☕ Support Videodyne
 
-WBTV is **free, open source and will stay that way**. It is built and tested in spare time on real hardware. If you enjoy it, please consider supporting development. Every coffee goes straight into new features and keeping things working.
+Videodyne is **free, open source and will stay that way**. It is built and tested in spare time on real hardware. If you enjoy it, please consider supporting development. Every coffee goes straight into new features and keeping things working.
 
 <p align="center">
-  <a href="https://buymeacoffee.com/succinctrecords"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20WBTV-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" height="56"></a>
+  <a href="https://buymeacoffee.com/succinctrecords"><img src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20Videodyne-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me A Coffee" height="56"></a>
 </p>
 
 Not able to donate? A star on the repo and telling a friend helps just as much. ⭐
@@ -491,5 +491,5 @@ The demo clips in this README use *Big Buck Bunny* (&copy; 2008 Blender Foundati
 [MIT](LICENSE). Piper (speech) and ffmpeg and yt-dlp are separate projects with their own licences; the container image bundles them.
 
 <p align="center">
-  <img src="Images/Assets/3.png" alt="WBTV" width="160">
+  <img src="Images/Assets/3.png" alt="Videodyne" width="160">
 </p>

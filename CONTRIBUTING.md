@@ -1,9 +1,9 @@
-# Contributing to WBTV
+# Contributing to Videodyne
 
 Thanks for wanting to help. Bug reports, ideas, documentation fixes and pull requests are all welcome.
 
 ## Reporting a bug
-Open an [issue](https://github.com/WB2024/WBTV/issues/new/choose) and include your WBTV version, how you run it, and the output of `http://<server>:8420/api/status` and `docker logs wbtv`.
+Open an [issue](https://github.com/WB2024/WBTV/issues/new/choose) and include your Videodyne version, how you run it, and the output of `http://<server>:8420/api/status` and `docker logs wbtv`.
 
 ## Running it locally
 Needs Node 22.13+ (24 recommended), ffmpeg and ffprobe on your PATH.

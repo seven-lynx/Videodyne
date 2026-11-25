@@ -1,6 +1,6 @@
-# WBTV HTTP API
+# Videodyne HTTP API
 
-Everything the web UI and the Android TV app do goes through this API, so you can script WBTV or build your own client. All JSON unless noted. The base URL is your server, e.g. `http://192.168.1.110:8420`.
+Everything the web UI and the Android TV app do goes through this API, so you can script Videodyne or build your own client. All JSON unless noted. The base URL is your server, e.g. `http://192.168.1.110:8420`.
 
 ## Authentication
 
