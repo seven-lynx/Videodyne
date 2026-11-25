@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 import android.content.Context
 import androidx.core.content.edit

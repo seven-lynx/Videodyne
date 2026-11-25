@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 /** A filter chip above the guide: which channels are listed. Equal when the ids are equal. */
 class ChannelFilter(val id: String, val label: String, val test: (Channel) -> Boolean) {

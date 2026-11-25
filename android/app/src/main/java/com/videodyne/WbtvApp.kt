@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 import android.app.AlarmManager
 import android.app.Application

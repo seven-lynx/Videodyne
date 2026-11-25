@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

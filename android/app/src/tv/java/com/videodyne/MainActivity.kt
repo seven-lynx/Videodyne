@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 import android.os.Bundle
 import android.view.KeyEvent
@@ -9,7 +9,7 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.wbtv.tv.ui.WbtvRoot
+import com.videodyne.ui.WbtvRoot
 
 class MainActivity : ComponentActivity() {
     private val vm: AppVm by viewModels()

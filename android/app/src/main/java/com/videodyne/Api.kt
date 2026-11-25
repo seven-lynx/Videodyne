@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

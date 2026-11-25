@@ -8,15 +8,29 @@ plugins {
 }
 
 android {
-    namespace = "com.wbtv.tv"
+    namespace = "com.videodyne"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.wbtv.tv"
         minSdk = 26
         targetSdk = 34
-        versionCode = 12
-        versionName = "0.9.1"
+        versionCode = 13
+        versionName = "0.10.0"
+    }
+
+    // Two apps from one module. Both share src/main (API, models, player, view model) and each owns
+    // its own MainActivity and UI in src/tv or src/phone: one is driven by a remote, the other by a
+    // thumb. Separate application ids so they install side by side and can ship on their own.
+    flavorDimensions += "form"
+    productFlavors {
+        create("tv") {
+            dimension = "form"
+            applicationId = "com.videodyne.tv"
+        }
+        create("phone") {
+            dimension = "form"
+            applicationId = "com.videodyne.app"
+        }
     }
 
     buildTypes {
