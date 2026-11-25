@@ -1,0 +1,4 @@
+<resources>
+    <!-- Beside the phone app on a launcher, the TV one should say what it is. -->
+    <string name="app_name">Videodyne TV</string>
+</resources>

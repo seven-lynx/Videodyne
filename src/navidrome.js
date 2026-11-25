@@ -10,7 +10,13 @@ import { tx } from './db.js';
 const V = '1.16.1';
 const enc = encodeURIComponent;
 export const makeAuth = (password) => { const salt = crypto.randomBytes(8).toString('hex'); return { salt, token: crypto.createHash('md5').update(String(password) + salt).digest('hex') }; };
-const authQuery = (src) => `u=${enc(src.user_id || '')}&t=${src.token || ''}&s=${src.salt || ''}&v=${V}&c=wbtv&f=json`;
+const authQuery = (src) => `u=${enc(src.user_id || '')}&t=${src.token || ''}&s=${src.salt || ''}&v=${V}&c=videodyne&f=json`;
+
+// A server that ignores an empty search3 can only be read one album at a time, so a pass is bounded and the next scan
+// continues it: the album offset is kept in `settings` under `navwalk_<source>/<view>` (the same bookkeeping habit as
+// `scanguard_<id>`, and invisible to the settings API). Not a user setting: both numbers bound one scan's work.
+const WALK_ALBUMS = 200;
+const WALK_SONGS = 20000;
 
 async function call(src, method, params = '', { timeout = 30000, binary = false } = {}) {
   const ctl = new AbortController();
@@ -77,7 +83,16 @@ const covers = () => path.join(cfg.configDir, 'covers');
 const coverFile = (srcId, art) => path.join(covers(), `ms_${srcId}_${crypto.createHash('md5').update(String(art)).digest('hex').slice(0, 16)}.jpg`);
 const hash = (o) => parseInt(crypto.createHash('md5').update(JSON.stringify(o)).digest('hex').slice(0, 7), 16);
 
-async function allSongs(src, view) {
+/**
+ * Every song of a view. The empty `search3` is tried first; it reads the whole view in one go, so `wholeView` is true.
+ * A server that ignores it is walked album by album instead, and that pass is bounded: it stops at `maxAlbums` (or when
+ * `maxSongs` are in hand, always taking at least one album so the walk can advance), reports through `progress`, and
+ * hands back `next`, the album offset the following scan continues from (`next: null` means this round is over).
+ * The page is asked for at that offset rather than at a multiple of 500, so no alignment is assumed and a server that
+ * ignores the offset ends at the cap instead of looping for ever. `wholeView: false` means `songs` is a slice, so the
+ * caller must neither treat the songs it does not hold as gone nor call the walk finished.
+ */
+async function allSongs(src, view, progress, { start = 0, maxAlbums = WALK_ALBUMS, maxSongs = WALK_SONGS, log = console.error } = {}) {
   const folder = view && view !== 'all' ? `&musicFolderId=${enc(view)}` : '';
   const out = [];
   for (let off = 0; ; off += 500) {
@@ -86,20 +101,39 @@ async function allSongs(src, view) {
     out.push(...page);
     if (page.length < 500) break;
   }
-  if (out.length) return out;
-  // a server that ignores the empty search: walk the albums instead (slower: one request per album)
-  for (let off = 0; ; off += 500) {
-    const r = await call(src, 'getAlbumList2.view', `type=alphabeticalByName&size=500&offset=${off}${folder}`, { timeout: 90000 });
+  if (out.length) return { songs: out, wholeView: true, next: null };
+  log(`navidrome: "${src.url}" ignores an empty search, so this view is read one album at a time — at most ${maxAlbums} albums per scan`);
+  let at = start, walked = 0, last = false, capped = false;
+  while (!last && !capped) {
+    const r = await call(src, 'getAlbumList2.view', `type=alphabeticalByName&size=500&offset=${at}${folder}`, { timeout: 90000 });
     const albums = r.albumList2?.album || [];
-    for (const a of albums) { const d = await call(src, 'getAlbum.view', `id=${enc(a.id)}`, { timeout: 30000 }); out.push(...(d.album?.song || [])); }
-    if (albums.length < 500) break;
+    last = albums.length < 500; // the end of the view
+    for (const a of albums) {
+      if (walked >= maxAlbums || (out.length > 0 && out.length >= maxSongs)) { capped = true; break; }
+      const d = await call(src, 'getAlbum.view', `id=${enc(a.id)}`, { timeout: 30000 });
+      out.push(...(d.album?.song || []));
+      walked++; at++;
+      progress.files = out.length;
+      progress.dirs = (progress.dirs || 0) + 1;
+    }
   }
-  return out;
+  if (capped) {
+    log(`navidrome: read ${walked} albums this scan, ${at} so far — the rest follows on the next scan, and a view read in slices is not pruned`);
+    return { songs: out, wholeView: false, next: at };
+  }
+  // the round is over: only a walk that began at the first album has seen everything, so only it can say what is gone
+  return { songs: out, wholeView: start === 0, next: null };
 }
 
 /** Scan a Navidrome library into radio tracks. Throws (leaving everything as it was) when the server cannot be read. */
-export async function scanNavidrome(db, lib, src, view, progress, { safeRemovals }) {
-  const songs = await allSongs(src, view); // read everything first: a server that is down must not look like an emptied library
+export async function scanNavidrome(db, lib, src, view, progress, { safeRemovals, log = console.error }) {
+  // where an interrupted album walk left off (see allSongs), in `settings` so a restart does not start over
+  const cursorKey = `navwalk_${src.id}/${view || 'all'}`;
+  const stored = Number(db.prepare('SELECT value FROM settings WHERE key=?').get(cursorKey)?.value);
+  const start = Number.isFinite(stored) && stored > 0 ? Math.trunc(stored) : 0;
+  const { songs, wholeView, next } = await allSongs(src, view, progress, { start, log }); // read everything first: a server that is down must not look like an emptied library
+  if (next === null) db.prepare('DELETE FROM settings WHERE key=?').run(cursorKey);
+  else db.prepare('INSERT OR REPLACE INTO settings(key,value) VALUES(?,?)').run(cursorKey, String(next));
   progress.files = songs.length;
   const existing = new Map(db.prepare('SELECT path,mtime,size FROM items WHERE library_id=?').all(lib.id).map((r) => [r.path, r]));
   const seen = new Set();
@@ -129,7 +163,8 @@ export async function scanNavidrome(db, lib, src, view, progress, { safeRemovals
       upsert.run(lib.id, p, s.title || path.parse(String(s.path || s.id)).name, year, runtime, JSON.stringify(genres), picture, sig, s.artist || s.displayArtist || '', s.album || '');
     }
   });
-  const gone = safeRemovals(db, lib, [...existing.keys()].filter((p) => !seen.has(p)), existing.size, seen.size, []);
+  // only a pass that read the whole view can tell a deleted album from an unwalked one: a slice removes nothing
+  const gone = wholeView ? safeRemovals(db, lib, [...existing.keys()].filter((p) => !seen.has(p)), existing.size, seen.size, []) : [];
   if (gone.length) { const del = db.prepare('DELETE FROM items WHERE path=?'); tx(db, () => { for (const p of gone) del.run(p); }); progress.removed = (progress.removed || 0) + gone.length; }
   db.prepare('UPDATE libraries SET last_scan=? WHERE id=?').run(Date.now(), lib.id);
   await fetchCovers(db, src, lib, songs, [...new Set(want)].slice(0, 300));

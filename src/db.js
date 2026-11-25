@@ -156,6 +156,8 @@ const DEFAULTS = {
   breakLengthMinutes: 3,
   fillGaps: true,         // fill the gap up to the next grid line with adverts
   minChannelMinutes: 30,  // a studio/genre needs this much content to become a channel
+  minTrackSeconds: 45,    // radio: a station skips anything shorter (a sting, a skit) ...
+  maxTrackSeconds: 900,   // ... and anything longer (an hour-long mix); the pair is read low-to-high
   tvGenreChannelsForAll: false, // also give every TV show a genre channel, not just studio-less ones
   movieStudioChannels: true,
   movieStudioMinFilms: 5,
@@ -165,6 +167,7 @@ const DEFAULTS = {
 const RANGES = {
   pauseBufferMinutes: [0, 30], scanIntervalMinutes: [5, 1440], promoCount: [1, 4], promoMaxSeconds: [15, 120], alignMinutes: [1, 60],
   breakEveryMinutes: [5, 180], breakLengthMinutes: [0.5, 15], minChannelMinutes: [0, 1000], movieStudioMinFilms: [1, 1000],
+  minTrackSeconds: [0, 3600], maxTrackSeconds: [1, 86400],
 };
 const ENUMS = { hwEncoder: ['auto', 'none', 'vaapi', 'nvenc'], streamHeight: [480, 576, 720], subtitleMode: ['off', 'foreign', 'always'], radioStyle: ['classic', 'blur', 'bars'], language: ['eng', 'fre', 'ger', 'spa', 'ita', 'jpn', 'kor', 'chi', 'rus', 'por', 'dut', 'wel'] };
 const TIMES = new Set(['signOffFrom', 'signOffTo']);

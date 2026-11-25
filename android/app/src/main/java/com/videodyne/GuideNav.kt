@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 /** Selection in the guide: a channel row and (if it has any) one of its programmes. */
 data class Sel(val ch: Int, val prog: Programme?)

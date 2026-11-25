@@ -17,6 +17,18 @@ test('numbers are clamped into a sane range, junk is rejected', () => {
   assert.equal(fitSetting('scanIntervalMinutes', 1), 5);
 });
 
+test('the radio track window is two settings, each clamped and neither dropped', () => {
+  assert.equal(fitSetting('minTrackSeconds', 20), 20);
+  assert.equal(fitSetting('minTrackSeconds', '45'), 45);
+  assert.equal(fitSetting('minTrackSeconds', -5), 0);
+  assert.equal(fitSetting('minTrackSeconds', 99999), 3600);
+  assert.equal(fitSetting('minTrackSeconds', 'x'), undefined);
+  assert.equal(fitSetting('maxTrackSeconds', 1200), 1200);
+  assert.equal(fitSetting('maxTrackSeconds', 0), 1);
+  assert.equal(fitSetting('maxTrackSeconds', 999999), 86400);
+  assert.equal(fitSetting('maxTrackSeconds', null), undefined);
+});
+
 test('booleans, enums and times are checked', () => {
   assert.equal(fitSetting('adsEnabled', 'false'), false);
   assert.equal(fitSetting('adsEnabled', true), true);
@@ -55,15 +67,15 @@ test('ad-break splitting is always finite (a zero setting used to loop forever)'
 });
 
 test('the stream height default comes from the one reader, taken at boot', () => {
-  // WBTV_HEIGHT was read a second time here, at import, so a later change to the environment
+  // VIDEODYNE_HEIGHT was read a second time here, at import, so a later change to the environment
   // silently outranked the value config.js read at boot. A child process is the only way to change
   // an env var between the two imports; it must still see the boot value.
   const src = new URL('../src/', import.meta.url).href;
   const script = `
     const { DatabaseSync } = await import('node:sqlite');
-    process.env.WBTV_HEIGHT = '576';
+    process.env.VIDEODYNE_HEIGHT = '576';
     await import(${JSON.stringify(`${src}config.js`)});
-    process.env.WBTV_HEIGHT = '1080';
+    process.env.VIDEODYNE_HEIGHT = '1080';
     const { getSettings } = await import(${JSON.stringify(`${src}db.js?one-reader`)});
     const db = new DatabaseSync(':memory:');
     db.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)');
@@ -71,5 +83,5 @@ test('the stream height default comes from the one reader, taken at boot', () =>
   `;
   const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
-  assert.equal(r.stdout.trim(), '576', 'db.js read WBTV_HEIGHT again instead of using cfg.height');
+  assert.equal(r.stdout.trim(), '576', 'db.js read VIDEODYNE_HEIGHT again instead of using cfg.height');
 });

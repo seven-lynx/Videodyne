@@ -1,4 +1,4 @@
-// Jellyfin and Emby as a source of TV and films (they share one API), so WBTV can read a library that lives in a media server
+// Jellyfin and Emby as a source of TV and films (they share one API), so Videodyne can read a library that lives in a media server
 // instead of (or as well as) folders. Items are stored as  ms://<sourceId>/<itemId>  and turned into a stream URL (with the API key)
 // only at the moment ffmpeg needs it, so no key is ever kept in an item path or sent to the browser.
 import fs from 'node:fs';
@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import { cfg } from './config.js';
 import { tx } from './db.js';
 import { scanNavidrome, streamUrl as navStream, fetchLyrics as navLyrics } from './navidrome.js';
+import { scanPlex, plexPartUrl } from './plex.js';
 
 export const isRemote = (p) => typeof p === 'string' && p.startsWith('ms://');
 export const parseRemote = (p) => { const m = /^ms:\/\/(\d+)\/(.+)$/.exec(String(p || '')); return m ? { source: Number(m[1]), ref: m[2] } : null; };
@@ -21,7 +22,7 @@ export function normalizeUrl(u) {
 
 /** Jellyfin 12 removed X-Emby-Token and ?api_key=; it wants  Authorization: MediaBrowser Token="..."  (and ?ApiKey= in a URL). Emby still uses the old ones. */
 const isEmby = (src) => src.kind === 'emby';
-const authHeaders = (src) => (isEmby(src) ? { 'X-Emby-Token': src.token || '' } : { Authorization: `MediaBrowser Client="WBTV", Device="WBTV", DeviceId="wbtv", Version="1", Token="${String(src.token || '').replace(/[^\w.-]/g, '')}"` });
+const authHeaders = (src) => (isEmby(src) ? { 'X-Emby-Token': src.token || '' } : { Authorization: `MediaBrowser Client="Videodyne", Device="Videodyne", DeviceId="videodyne", Version="1", Token="${String(src.token || '').replace(/[^\w.-]/g, '')}"` });
 /** ffmpeg cannot be given a header per request here, so a stream URL carries the key in the query: both spellings for Jellyfin (older and 12+), api_key for Emby. */
 const keyQuery = (src) => (isEmby(src) ? `api_key=${encodeURIComponent(src.token || '')}` : `ApiKey=${encodeURIComponent(src.token || '')}&api_key=${encodeURIComponent(src.token || '')}`);
 
@@ -80,6 +81,7 @@ export function resolveMedia(db, p) {
   if (!r) return p;
   const src = getSource(db, r.source);
   if (!src) return p; // the source was removed: ffmpeg will fail on it and the broadcaster shows the test card
+  if (src.kind === 'plex') return plexPartUrl(src, r.ref);
   if (src.kind === 'navidrome') return navStream(src, r.ref);
   return `${src.url}/Videos/${encodeURIComponent(r.ref)}/stream?static=true&MediaSourceId=${encodeURIComponent(r.ref)}&${keyQuery(src)}`;
 }
@@ -112,6 +114,7 @@ export async function scanMediaServer(db, lib, progress, { safeRemovals }) {
   if (!src) throw new Error('the media server for this library was removed');
   const view = m[2];
   if (src.kind === 'navidrome') return scanNavidrome(db, lib, src, view, progress, { safeRemovals });
+  if (src.kind === 'plex') return scanPlex(db, lib, src, view, progress, { safeRemovals });
   const uid = src.user_id;
   const base = `/Users/${uid}/Items?ParentId=${encodeURIComponent(view)}&Recursive=true&Fields=${FIELDS}`;
   const tv = lib.type === 'tv', mv = lib.type === 'music'; // mv: a "Music Videos" library

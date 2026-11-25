@@ -42,7 +42,7 @@ export function parseM3u(text) {
 
 async function readSource(src) {
   if (isUrl(src)) {
-    const r = await fetch(src, { signal: AbortSignal.timeout(45000), headers: { 'User-Agent': 'WBTV/1.0' } });
+    const r = await fetch(src, { signal: AbortSignal.timeout(45000), headers: { 'User-Agent': 'Videodyne/1.0' } });
     if (!r.ok) throw new Error(`HTTP ${r.status} fetching playlist`);
     return await r.text();
   }

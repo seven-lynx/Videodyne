@@ -1,4 +1,4 @@
-package com.wbtv.tv.ui
+package com.videodyne.ui
 
 import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
@@ -66,15 +66,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
-import com.wbtv.tv.AppVm
-import com.wbtv.tv.Channel
-import com.wbtv.tv.ChannelFilter
-import com.wbtv.tv.Programme
-import com.wbtv.tv.R
-import com.wbtv.tv.Themes
-import com.wbtv.tv.WbtvTheme
-import com.wbtv.tv.Zone
-import com.wbtv.tv.themeById
+import com.videodyne.AppVm
+import com.videodyne.Channel
+import com.videodyne.ChannelFilter
+import com.videodyne.Programme
+import com.videodyne.R
+import com.videodyne.Themes
+import com.videodyne.WbtvTheme
+import com.videodyne.Zone
+import com.videodyne.themeById
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date

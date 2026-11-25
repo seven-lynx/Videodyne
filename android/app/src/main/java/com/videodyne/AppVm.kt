@@ -1,4 +1,4 @@
-package com.wbtv.tv
+package com.videodyne
 
 import android.app.Application
 import android.view.KeyEvent
@@ -30,9 +30,16 @@ import java.util.UUID
 /** Where the D-pad focus is while the guide is open. */
 enum class Zone { GRID, TOOLBAR }
 
-class AppVm(app: Application) : AndroidViewModel(app) {
+open class AppVm(app: Application) : AndroidViewModel(app) {
     val prefs = Prefs(app)
     private val viewer = UUID.randomUUID().toString().take(12)
+
+    /**
+     * Does opening the app tune the last channel? A television does — that is the point of it. A
+     * phone does not: every start is an encoder on the server, and opening an app is not watching.
+     * The phone flavor overrides this in its own view model.
+     */
+    open val autoTuneOnLaunch = true
     var api: Api = Api(prefs.server, prefs.key)
         private set
 
@@ -147,7 +154,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 var idx = channels.indexOfFirst { it.id == prefs.lastChannel }
                 if (idx < 0 && allChannels.any { it.id == prefs.lastChannel }) { applyFilter(ChannelFilter.ALL); idx = channels.indexOfFirst { it.id == prefs.lastChannel } }
                 setSel(nav.atNow(idx.coerceAtLeast(0), nowSec), snapView = true)
-                if (idx >= 0) tune(idx, fullscreen = true) else guideVisible = true
+                if (autoTuneOnLaunch) { if (idx >= 0) tune(idx, fullscreen = true) else guideVisible = true }
             } else {
                 val keep = programmes[channels.getOrNull(sel.ch)?.id]?.firstOrNull { it.id == sel.prog?.id }
                 setSel(if (keep != null) Sel(sel.ch, keep) else nav.atNow(sel.ch, nowSec), snapView = false)
@@ -168,6 +175,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         rebuildChannels()
         setSel(nav.atNow(0, nowSec), snapView = true)
     }
+
+    /**
+     * Point the shared selection at a row and a programme without a D-pad — what the phone guide
+     * does when a thumb lands on a cell — so the detail request (plot, cast, genres) runs for it.
+     */
+    fun selectForDetail(index: Int, p: Programme?) = setSel(Sel(index, p), snapView = false)
 
     private fun setSel(s: Sel, snapView: Boolean) {
         sel = s

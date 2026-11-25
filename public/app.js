@@ -26,7 +26,12 @@ const fmtTime = (t) => new Date(t * 1000).toLocaleTimeString([], { hour: '2-digi
 const fmtDur = (s) => { const m = Math.round(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
 
 // ------------------------------------------------------------------ state
-const S = { allChannels: [], channels: [], epg: null, selCh: 0, selProg: null, playing: null, hls: null, detail: new Map(), digits: '', filter: localStorage.getItem('wbtv-filter') || 'all' };
+// The three stored preferences changed key with the product name (BRAND/B3). A viewer who chose a
+// theme, a filter or auto-fullscreen before the rename keeps it: the new key is read first, the old
+// one is still honoured, and every write goes to the new key.
+const stored = (key, fallback) => localStorage.getItem(`videodyne-${key}`) ?? localStorage.getItem(`wbtv-${key}`) ?? fallback;
+const remember = (key, value) => localStorage.setItem(`videodyne-${key}`, value);
+const S = { allChannels: [], channels: [], epg: null, selCh: 0, selProg: null, playing: null, hls: null, detail: new Map(), digits: '', filter: stored('filter', 'all') };
 const video = $('#video');
 let epgFrom = 0;
 
@@ -51,7 +56,7 @@ function applyFilter() {
   S.selCh = Math.max(0, Math.min(S.channels.length - 1, S.selCh));
 }
 function setFilter(id) {
-  S.filter = id; localStorage.setItem('wbtv-filter', id);
+  S.filter = id; remember('filter', id);
   applyFilter(); renderToolbar(); renderGuide(); selectNow(0, true);
   $('#guide').scrollTop = 0;
 }
@@ -91,7 +96,7 @@ function renderGuide() {
   g.replaceChildren();
   if (!S.channels.length) {
     g.append(h('div', { style: 'padding:40px;text-align:center;color:var(--dim)' },
-      h('h2', {}, 'No channels yet'), h('p', {}, 'Open Setup, add a library folder, and WBTV will build the channels from your NFO tags.'),
+      h('h2', {}, 'No channels yet'), h('p', {}, 'Open Setup, add a library folder, and Videodyne will build the channels from your NFO tags.'),
       h('button', { onclick: openSetup }, '⚙ Open Setup')));
     return;
   }
@@ -258,7 +263,7 @@ function goLive() {
   video.play().catch(() => {});
   showOsd();
 }
-const autoFullscreen = () => localStorage.getItem('wbtv-autofs') !== '0';
+const autoFullscreen = () => stored('autofs', '1') !== '0';
 const goFullscreen = () => { if (!document.fullscreenElement) $('#player').requestFullscreen?.().catch(() => {}); };
 const exitFullscreen = () => { if (document.fullscreenElement) document.exitFullscreen(); };
 const toggleFullscreen = () => (document.fullscreenElement ? exitFullscreen() : goFullscreen());
@@ -359,7 +364,7 @@ function renderSetup() {
   const tabs = [['libraries', 'Libraries'], ['live', 'Live TV'], ['channels', 'Channels'], ['ads', 'Ads'], ['announce', 'Announcements'], ['mvdb', 'Music videos'], ['settings', 'Settings'], ['appearance', 'Appearance']];
   const body = h('div', { class: 'body' });
   m.replaceChildren(h('div', { class: 'dlg' },
-    h('header', {}, h('img', { src: '/img/logo.png', alt: 'WBTV', style: 'height:30px;margin-right:10px' }), h('b', { style: 'margin-right:12px' }, 'Setup'),
+    h('header', {}, h('img', { src: '/img/logo.png', alt: 'Videodyne', style: 'height:30px;margin-right:10px' }), h('b', { style: 'margin-right:12px' }, 'Setup'),
       tabs.map(([k, l]) => h('button', { class: `tab ${k === setupTab ? 'on' : ''}`, onclick: () => { setupTab = k; renderSetup(); } }, l)),
       h('button', { class: 'x', onclick: closeModal }, 'Close ✕')), body));
   clearInterval(pollTimer);
@@ -378,7 +383,7 @@ async function tabMusicVideos(body) {
   body.append(intro, keyRow, msg);
   if (!st.ready) {
     body.append(h('h3', {}, 'Not ready yet'), h('ul', {}, st.problems.map((p) => h('li', {}, p))),
-      h('p', { class: 'note' }, 'WBTV keeps your media read-only by default. To use this you make just the music video folder writable in your Docker setup, for example: "- /path/to/Music Video:/path/to/Music Video" without ":ro". Your key is stored on the server and never shown here.'));
+      h('p', { class: 'note' }, 'Videodyne keeps your media read-only by default. To use this you make just the music video folder writable in your Docker setup, for example: "- /path/to/Music Video:/path/to/Music Video" without ":ro". Your key is stored on the server and never shown here.'));
     return;
   }
   const left = h('div', { style: 'flex:0 0 260px;max-height:420px;overflow:auto' });
@@ -477,36 +482,36 @@ function libTable(libs, reload, poll) {
     libs.map((l) => h('tr', {}, h('td', {}, l.name, groupControls(l, reload), l.perTitle !== undefined ? h('div', { class: 'note' }, h('label', { title: 'Each show or book gets its own channel, always playing in order and looping. Off: one station for the whole library.' }, h('input', { type: 'checkbox', checked: !!l.perTitle, onchange: async (e) => { await api(`/api/libraries/${l.id}`, { method: 'PATCH', body: { perTitle: e.target.checked } }).catch((er) => alert(er.message)); reload(); } }), ' one channel per show / book')) : null), h('td', { style: 'word-break:break-all' }, l.path.startsWith('ms://') ? 'Media server library' : l.path), h('td', {}, LIB_TYPES[l.type] || l.type),
       h('td', {}, String(isAdsLib(l) ? l.ads : l.type === 'iptv' ? '' : l.items)),
       h('td', {}, h('button', { class: 'sm', onclick: async () => { await api('/api/scan', { method: 'POST', body: { libraryId: l.id } }); poll(); } }, 'Scan'), ' ',
-        h('button', { class: 'sm danger', onclick: async () => { if (confirm(`Remove "${l.name}" from WBTV? (files are not touched)`)) { await api(`/api/libraries/${l.id}`, { method: 'DELETE' }); reload(); } } }, 'Remove')))));
+        h('button', { class: 'sm danger', onclick: async () => { if (confirm(`Remove "${l.name}" from Videodyne? (files are not touched)`)) { await api(`/api/libraries/${l.id}`, { method: 'DELETE' }); reload(); } } }, 'Remove')))));
 }
 
-/** Read libraries from a media server instead of from folders: Jellyfin / Emby (TV, films, music videos) or Navidrome (music, for the radio stations). */
+/** Read libraries from a media server instead of from folders: Jellyfin / Emby (TV, films, music videos), Plex (TV, films) or Navidrome (music, for the radio stations). */
 function addMediaServerForm(onAdded) {
-  const kind = h('select', {}, [['jellyfin', 'Jellyfin / Emby (TV, films, music videos)'], ['navidrome', 'Navidrome (music for radio)']].map(([v, l]) => h('option', { value: v }, l)));
+  const kind = h('select', {}, [['jellyfin', 'Jellyfin / Emby (TV, films, music videos)'], ['plex', 'Plex (TV, films)'], ['navidrome', 'Navidrome (music for radio)']].map(([v, l]) => h('option', { value: v }, l)));
   const url = h('input', { type: 'text', placeholder: 'Server address, e.g. 192.168.1.111:8096', style: 'flex:1;min-width:200px' });
-  const key = h('input', { type: 'password', placeholder: 'API key (Jellyfin: Dashboard > API Keys)', style: 'flex:1;min-width:200px', autocomplete: 'off' });
+  const key = h('input', { type: 'password', placeholder: 'API key, or a Plex token (X-Plex-Token)', style: 'flex:1;min-width:200px', autocomplete: 'off' });
   const user = h('input', { type: 'text', placeholder: 'Navidrome username', style: 'width:170px', autocomplete: 'off' });
   const pass = h('input', { type: 'password', placeholder: 'Password', style: 'width:150px', autocomplete: 'off' });
   const out = h('div', {});
   const show = () => {
     const nav = kind.value === 'navidrome';
     key.style.display = nav ? 'none' : ''; user.style.display = pass.style.display = nav ? '' : 'none';
-    url.placeholder = nav ? 'Server address, e.g. 192.168.1.110:4534' : 'Server address, e.g. 192.168.1.111:8096';
+    url.placeholder = nav ? 'Server address, e.g. 192.168.1.110:4534' : kind.value === 'plex' ? 'Server address, e.g. 192.168.1.111:32400' : 'Server address, e.g. 192.168.1.111:8096';
   };
   kind.onchange = show; show();
   const connect = h('button', { onclick: async () => {
     out.replaceChildren(h('div', { class: 'note' }, 'Connecting...'));
     try {
       const nav = kind.value === 'navidrome';
-      const d = await api('/api/sources', { method: 'POST', body: nav ? { kind: 'navidrome', url: url.value, username: user.value, password: pass.value } : { url: url.value, token: key.value } });
-      key.value = ''; pass.value = ''; // the password is only used to log in once; WBTV keeps a token, not the password
+      const d = await api('/api/sources', { method: 'POST', body: nav ? { kind: 'navidrome', url: url.value, username: user.value, password: pass.value } : { kind: kind.value, url: url.value, token: key.value } });
+      key.value = ''; pass.value = ''; // the password is only used to log in once; Videodyne keeps a token, not the password
       const label = (v) => (v.type === 'tv' ? 'TV shows' : v.type === 'radio' ? 'Music, as radio stations' : v.type === 'music' ? 'Music videos' : 'Movies');
       out.replaceChildren(h('div', { class: 'note' }, `Connected to ${d.name} (${d.product} ${d.version}). Add the libraries you want:`),
         d.views.length ? d.views.map((v) => h('div', { class: 'row2' }, h('span', { style: 'width:300px' }, `${v.name} (${label(v)})`),
           h('button', { onclick: async (e) => {
             try { await api('/api/libraries', { method: 'POST', body: { sourceId: d.id, viewId: v.id, type: v.type, name: `${d.name}: ${v.name}` } }); e.target.disabled = true; e.target.textContent = 'Added'; onAdded(); }
             catch (err) { e.target.textContent = err.message; }
-          } }, 'Add'))) : h('div', { class: 'note' }, 'That server has no libraries WBTV can use.'));
+          } }, 'Add'))) : h('div', { class: 'note' }, 'That server has no libraries Videodyne can use.'));
     } catch (e) { out.replaceChildren(h('div', { class: 'err' }, e.message)); }
   } }, 'Connect');
   return h('div', {}, h('div', { class: 'row2' }, kind, url, key, user, pass, connect), out);
@@ -517,7 +522,7 @@ async function tabLibraries(body) {
   const list = h('div', {});
   body.append(status, list, h('h3', {}, 'Add a library'), addLibraryForm(() => { reload(); poll(); }, ['tv', 'movies', 'music', 'clips', 'radio', 'talk_interviews', 'talk_podcasts', 'talk_audiobooks']),
     h('h3', {}, 'Or read libraries from a media server'),
-    h('p', { class: 'note' }, 'Jellyfin / Emby for TV, films and music videos, Navidrome for music. WBTV reads titles, genres and pictures through the server API and plays the originals from it, so channels are built just like from folders. The key (or, for Navidrome, a login token; the password is not kept) stays on the WBTV server. See the README for when folders are the better choice.'),
+    h('p', { class: 'note' }, 'Jellyfin / Emby for TV, films and music videos, Navidrome for music. Videodyne reads titles, genres and pictures through the server API and plays the originals from it, so channels are built just like from folders. The key (or, for Navidrome, a login token; the password is not kept) stays on the Videodyne server. See the README for when folders are the better choice.'),
     addMediaServerForm(() => { reload(); poll(); }),
     h('p', { class: 'note' }, 'Music videos: video files with an Artist - Title name (or a <musicvideo> NFO). Radio: audio files; tags are read from the files. Both build themed channels automatically. Live TV and news streams are on the Live TV tab.'));
   const poll = () => scanStatus(status, reload);
@@ -569,13 +574,13 @@ async function tabLive(body) {
   const have = new Set(libs.map((l) => l.path));
   body.append(
     status,
-    h('p', { class: 'note' }, 'Live channels (news, music TV, radio stations, any HLS stream) have no schedule: you join what is on right now. WBTV re-encodes them to match everything else and tests each stream so dead ones are hidden.'),
+    h('p', { class: 'note' }, 'Live channels (news, music TV, radio stations, any HLS stream) have no schedule: you join what is on right now. Videodyne re-encodes them to match everything else and tests each stream so dead ones are hidden.'),
     h('h3', { style: 'margin-top:0' }, 'Add a playlist or stream'),
     h('div', { class: 'row2' }, name, url, h('button', { onclick: () => add(url.value.trim(), name.value.trim()) }, 'Add')), msg,
     h('h3', {}, 'Suggested sources'),
     h('table', {}, presets.map((p) => h('tr', {}, h('td', {}, h('b', {}, p.name), h('div', { class: 'note' }, p.note)),
       h('td', { style: 'width:90px' }, have.has(p.url) ? h('span', { class: 'ok' }, 'added') : h('button', { class: 'sm', onclick: () => add(p.url, p.name) }, 'Add'))))),
-    h('p', { class: 'note' }, 'These are public community lists of free streams, not run by WBTV; availability changes and some streams are dead or region-locked. You can also paste a YouTube live URL (e.g. a news channel\'s live stream).'),
+    h('p', { class: 'note' }, 'These are public community lists of free streams, not run by Videodyne; availability changes and some streams are dead or region-locked. You can also paste a YouTube live URL (e.g. a news channel\'s live stream).'),
     h('h3', {}, 'Your live sources'),
     sum.length ? h('table', {}, h('tr', {}, ['Name', 'Streams', 'Working', 'Dead', 'On air', ''].map((t) => h('th', {}, t))),
       sum.map((l) => h('tr', {}, h('td', { style: 'word-break:break-all' }, l.name), h('td', {}, String(l.total)),
@@ -717,7 +722,7 @@ function securityBlock(enabled, key) {
     try { await api('/api/auth/password', { method: 'POST', body: { password: pw.value } }); renderSetup(); } catch (e) { msg.textContent = e.message; }
   };
   const rows = [h('div', { class: 'row2' }, pw, h('button', { onclick: setPw }, enabled ? 'Change password' : 'Turn on password'), msg)];
-  if (!enabled) rows.push(h('p', { class: 'note' }, 'Off: anyone on your network can open WBTV. Turn it on if you expose WBTV outside your home. Browsers log in once; apps use an access key.'));
+  if (!enabled) rows.push(h('p', { class: 'note' }, 'Off: anyone on your network can open Videodyne. Turn it on if you expose Videodyne outside your home. Browsers log in once; apps use an access key.'));
   else rows.push(
     h('p', { class: 'note' }, 'A password is set. Other apps (the Android TV app, IPTV players, Plex/Jellyfin) use this access key instead of the password:'),
     mono(key),
@@ -726,7 +731,7 @@ function securityBlock(enabled, key) {
     h('div', { class: 'row2' },
       h('button', { onclick: async () => { await api('/api/auth/key', { method: 'POST' }); renderSetup(); } }, 'Make a new access key'),
       h('button', { onclick: async () => { await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, 'Log out'),
-      h('button', { onclick: async () => { if (confirm('Remove the password? Anyone on your network will be able to open WBTV.')) { await api('/api/auth', { method: 'DELETE' }); renderSetup(); } } }, 'Remove password')));
+      h('button', { onclick: async () => { if (confirm('Remove the password? Anyone on your network will be able to open Videodyne.')) { await api('/api/auth', { method: 'DELETE' }); renderSetup(); } } }, 'Remove password')));
   return h('div', {}, rows);
 }
 
@@ -739,15 +744,15 @@ async function tabSettings(body) {
   body.append(
     h('h3', { style: 'margin-top:0' }, 'Library scanning'),
     boolField(s, 'autoScan', 'Rescan libraries automatically', 'Picks up new, changed and removed media. Scans are incremental, so they are quick.'),
-    numField(s, 'scanIntervalMinutes', 'Rescan every (minutes)', 'Network shares give no change notifications, so WBTV checks on this interval.', { min: 5 }),
-    boolField(s, 'scanOnStartup', 'Scan when WBTV starts', ''),
+    numField(s, 'scanIntervalMinutes', 'Rescan every (minutes)', 'Network shares give no change notifications, so Videodyne checks on this interval.', { min: 5 }),
+    boolField(s, 'scanOnStartup', 'Scan when Videodyne starts', ''),
     numField(s, 'pauseBufferMinutes', 'Pause / rewind buffer (minutes)', 'How far back you can pause or rewind live TV (0 = off, max 30). Kept in RAM on the server (about 20 MB per minute per watched channel).', { min: 0 }),
     h('div', { class: 'row2' }, h('button', { onclick: async () => { await api('/api/scan', { method: 'POST', body: {} }); setTimeout(renderSetup, 800); } }, 'Scan now'), h('span', { class: 'note' }, lastScan + next + (sc.running ? ' · scanning…' : ''))),
     h('h3', {}, 'Security'),
     securityBlock(au.enabled, apiKey),
     h('h3', {}, 'Smart scheduling'),
     boolField(s, 'autoDaypart', 'Schedule to suit the time of day', 'Uses your genres and age ratings: cartoons and family shows after school and on Saturday mornings, mature and horror late at night, factual by day. Soft preferences, so channels never run dry. Re-plans the schedule.'),
-    boolField(s, 'eraAds', 'Match adverts to the era', 'A 1990s programme gets 1990s adverts more often. WBTV reads the year from the ad title or folder name ("1994", "1990s", "80s"). Ads with no year are unaffected.'),
+    boolField(s, 'eraAds', 'Match adverts to the era', 'A 1990s programme gets 1990s adverts more often. Videodyne reads the year from the ad title or folder name ("1994", "1990s", "80s"). Ads with no year are unaffected.'),
     h('h3', {}, 'Presentation'),
     boolField(s, 'channelBug', 'Channel bug on programmes', 'A small channel logo (add logos in the Channels tab) or, without one, the channel name, in the top-right corner.'),
     boolField(s, 'lyrics', 'Show lyrics on music radio', 'Uses a .lrc (time-synced), .srt or .txt file with the same name as the track, or lyrics stored in the file tags. Plain text is paged across the song as an estimate.'),
@@ -777,14 +782,16 @@ async function tabSettings(body) {
     h('div', { class: 'row2' }, h('label', { style: 'width:280px' }, 'Hardware encoding'),
       h('select', { onchange: async (e) => { await put({ hwEncoder: e.target.value }); renderSetup(); } },
         [['auto', 'Automatic'], ['none', 'Off (CPU only)'], ['vaapi', 'Intel / AMD GPU (VAAPI)'], ['nvenc', 'NVIDIA (NVENC)']].map(([v, l]) => h('option', { value: v, selected: v === s.hwEncoder }, l)))),
-    h('p', { class: 'note' }, 'Now: ' + hwi.note + ' Hardware encoding needs the GPU passed into the container (see the README). WBTV tests it first and falls back to the CPU if it does not work. Applies from the next programme.'),
+    h('p', { class: 'note' }, 'Now: ' + hwi.note + ' Hardware encoding needs the GPU passed into the container (see the README). Videodyne tests it first and falls back to the CPU if it does not work. Applies from the next programme.'),
     h('h3', {}, 'Channel building'),
     numField(s, 'minChannelMinutes', 'Minimum channel size (minutes)', 'A studio/genre needs this much content to get its own channel. Lower = more channels. 0 = every studio.'),
+    numField(s, 'minTrackSeconds', 'Shortest radio track (seconds)', 'Radio skips anything shorter: a sting, a skit, an intro. 45 by default.'),
+    numField(s, 'maxTrackSeconds', 'Longest radio track (seconds)', 'And anything longer: an hour-long mix, a whole DJ set. 900 (15 minutes) by default.'),
     boolField(s, 'tvGenreChannelsForAll', 'Genre channels for every TV show', 'By default only shows with no (big enough) studio go on genre channels. Turn on to put every show on its genre channels too.'),
     boolField(s, 'movieStudioChannels', 'Movie studio channels', 'e.g. a Warner Bros. film channel.'),
     numField(s, 'movieStudioMinFilms', 'Films needed for a studio channel', '', { min: 1 }),
     boolField(s, 'movieDecadeChannels', 'Movie decade channels', 'e.g. 1990s Cinema.'),
-    h('p', { class: 'note' }, 'Changes rebuild the channels and re-plan everything that has not aired yet. Stream quality is set with environment variables (WBTV_WIDTH, WBTV_HEIGHT, WBTV_CRF).'));
+    h('p', { class: 'note' }, 'Changes rebuild the channels and re-plan everything that has not aired yet. Stream quality is set with environment variables (VIDEODYNE_WIDTH, VIDEODYNE_HEIGHT, VIDEODYNE_CRF).'));
 }
 
 const THEMES = [
@@ -802,12 +809,12 @@ function tabAppearance(body) {
   const cur = document.documentElement.dataset.theme;
   body.append(
     h('h3', { style: 'margin-top:0' }, 'Behaviour'),
-    h('div', { class: 'row2' }, h('label', {}, h('input', { type: 'checkbox', checked: autoFullscreen(), onchange: (e) => localStorage.setItem('wbtv-autofs', e.target.checked ? '1' : '0') }), ' Go fullscreen when I select a programme'),
+    h('div', { class: 'row2' }, h('label', {}, h('input', { type: 'checkbox', checked: autoFullscreen(), onchange: (e) => remember('autofs', e.target.checked ? '1' : '0') }), ' Go fullscreen when I select a programme'),
       h('span', { class: 'note' }, 'Off: the channel plays in the small preview and you press Enter on it again (or F) for fullscreen.')),
     h('h3', {}, 'Theme'), h('p', { class: 'note' }, 'Behaviour and theme are remembered in this browser.'),
     h('div', { class: 'themes' }, THEMES.map(([id, name, sw]) => h('button', {
       class: `theme ${id === cur ? 'on' : ''}`,
-      onclick: () => { document.documentElement.dataset.theme = id; localStorage.setItem('wbtv-theme', id); renderSetup(); },
+      onclick: () => { document.documentElement.dataset.theme = id; remember('theme', id); renderSetup(); },
     }, h('div', { class: 'swatch' }, sw.map((c) => h('i', { style: `background:${c}` }))), name))));
 }
 
@@ -826,7 +833,7 @@ async function gate() {
     const m = $('#modal');
     m.classList.remove('hidden');
     m.replaceChildren(h('div', { class: 'dlg', style: 'padding:24px;max-width:360px;height:auto;text-align:center' },
-      h('img', { src: '/img/logo.png', alt: 'WBTV', style: 'height:48px;margin-bottom:12px' }), h('p', {}, 'This WBTV is password protected.'), pw, err, h('button', { onclick: go }, 'Log in')));
+      h('img', { src: '/img/logo.png', alt: 'Videodyne', style: 'height:48px;margin-bottom:12px' }), h('p', {}, 'This Videodyne is password protected.'), pw, err, h('button', { onclick: go }, 'Log in')));
     setTimeout(() => pw.focus(), 50);
   });
 }

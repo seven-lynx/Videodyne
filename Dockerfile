@@ -30,9 +30,9 @@ COPY tools ./tools
 
 ENV NODE_ENV=production \
     PORT=8080 \
-    WBTV_CONFIG=/config \
-    WBTV_TMP=/tmp/wbtv \
-    WBTV_BROWSE_ROOTS=/mnt,/media,/data
+    VIDEODYNE_CONFIG=/config \
+    VIDEODYNE_TMP=/tmp/videodyne \
+    VIDEODYNE_BROWSE_ROOTS=/mnt,/media,/data
 
 VOLUME /config
 EXPOSE 8080

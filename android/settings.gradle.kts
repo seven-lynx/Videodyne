@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "WBTV"
+rootProject.name = "Videodyne"
 include(":app")

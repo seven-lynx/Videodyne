@@ -1,23 +1,23 @@
-# WBTV - your own media as live TV.   Start it with:  docker compose up -d   then open http://<this-machine>:8420
+# Videodyne - your own media as live TV.   Start it with:  docker compose up -d   then open http://<this-machine>:8420
 services:
-  wbtv:
+  videodyne:
     image: wb20244/wbtv:latest
-    container_name: wbtv
+    container_name: videodyne
     restart: unless-stopped
     ports:
       - 8420:8080
     environment:
       - TZ=Europe/London                # your timezone, so the guide matches your clock
-      # - WBTV_WIDTH=1280               # stream resolution (also in Settings)
-      # - WBTV_HEIGHT=720
-      # - WBTV_CRF=23                   # x264 quality (lower = better/bigger)
-      # - WBTV_PRESET=veryfast          # x264 speed preset
+      # - VIDEODYNE_WIDTH=1280          # stream resolution (also in Settings)
+      # - VIDEODYNE_HEIGHT=720
+      # - VIDEODYNE_CRF=23              # x264 quality (lower = better/bigger)
+      # - VIDEODYNE_PRESET=veryfast     # x264 speed preset
     # devices:                          # optional: GPU encoding (Intel/AMD VAAPI), see the README
     #   - /dev/dri:/dev/dri
     volumes:
       - ./config:/config                # database, covers, voices, downloaded ads
-      - /path/to/your/media:/media:ro   # your media, read-only. WBTV never changes your files
+      - /path/to/your/media:/media:ro   # your media, read-only. Videodyne never changes your files
     # Optional: to let Setup > Music videos save downloads, mount your music video folder WITHOUT :ro, e.g.
     #   - /path/to/Music Video:/path/to/Music Video
     tmpfs:
-      - /tmp/wbtv:size=2g               # live HLS segments incl. the pause/rewind buffer (RAM)
+      - /tmp/videodyne:size=2g          # live HLS segments incl. the pause/rewind buffer (RAM)

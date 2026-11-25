@@ -13,11 +13,12 @@ import { scanLibrary } from './scanner.js';
 import { inferChannels, syncLiveChannels, talkPerTitle } from './channels.js';
 import { checkStreams, isUrl } from './iptv.js';
 import { discover, forgetSource, normalizeUrl } from './mediaserver.js';
+import { discoverPlex } from './plex.js';
 import { subsonicDiscover } from './navidrome.js';
 import { registerImvdb } from './imvdb.js';
 import { ensureSchedule, ensureChannelSchedule, rescheduleFuture } from './scheduler.js';
 import { probePending } from './media.js';
-import { Broadcaster } from './broadcaster.js';
+import { Broadcaster, hideKeys } from './broadcaster.js';
 import { addAdUrls, processAds, removeAd } from './ads.js';
 import { initAuth } from './auth.js';
 import { logoFile, saveLogo, removeLogo, MIME } from './logos.js';
@@ -106,7 +107,10 @@ app.get('/api/libraries', () => db.prepare(`
 
 // ---- media servers (Jellyfin / Emby) as a source of TV and films
 const isNavidrome = (b) => b?.kind === 'navidrome';
-const findSource = (b) => (isNavidrome(b) ? subsonicDiscover(b.url, b.username, b.password, normalizeUrl) : discover(b?.url, b?.token, b?.userId));
+const isPlex = (b) => b?.kind === 'plex';
+const findSource = (b) => (isPlex(b) ? discoverPlex(normalizeUrl(b.url), b.token)
+  : isNavidrome(b) ? subsonicDiscover(b.url, b.username, b.password, normalizeUrl)
+  : discover(b?.url, b?.token, b?.userId));
 const publicSource = ({ salt, token, ...rest }) => rest; // credentials never go back to the browser
 app.post('/api/sources/discover', async (req, reply) => {
   try { return publicSource(await findSource(req.body)); } catch (e) { return reply.code(400).send({ error: e.message }); }
@@ -115,7 +119,7 @@ app.post('/api/sources', async (req, reply) => {
   try {
     const d = await findSource(req.body);
     const nav = isNavidrome(req.body);
-    const kind = nav ? 'navidrome' : /emby/i.test(d.product) ? 'emby' : 'jellyfin';
+    const kind = nav ? 'navidrome' : isPlex(req.body) ? 'plex' : /emby/i.test(d.product) ? 'emby' : 'jellyfin';
     db.prepare(`INSERT INTO sources(kind,name,url,token,user_id,salt) VALUES(?,?,?,?,?,?)
       ON CONFLICT(url) DO UPDATE SET kind=excluded.kind,name=excluded.name,token=excluded.token,user_id=excluded.user_id,salt=excluded.salt`)
       .run(kind, d.name, d.url, nav ? d.token : String(req.body.token).trim(), d.userId, nav ? d.salt : null);
@@ -214,7 +218,7 @@ app.patch('/api/libraries/:id', async (req, reply) => {
 
 app.delete('/api/libraries/:id', async (req) => {
   const gone = db.prepare('SELECT name, path, type FROM libraries WHERE id=?').get(req.params.id);
-  console.log(`[libraries] removing library ${req.params.id}${gone ? ` "${gone.name}" (${gone.type}, ${gone.path.replace(/api_key=[^&]+/, 'api_key=***')})` : ' (not found)'}`); // so a removal is never a mystery
+  console.log(`[libraries] removing library ${req.params.id}${gone ? ` "${gone.name}" (${gone.type}, ${hideKeys(gone.path)})` : ' (not found)'}`); // so a removal is never a mystery
   db.prepare('DELETE FROM libraries WHERE id=?').run(req.params.id);
   inferChannels(db);
   syncLiveChannels(db); await rescheduleFuture(db);
@@ -228,7 +232,7 @@ app.get('/api/scan', () => {
   return { ...scan, autoScan: s.autoScan, nextAuto: s.autoScan && !scan.running && base ? base + s.scanIntervalMinutes * 60000 : null };
 });
 
-// folder browser (restricted to WBTV_BROWSE_ROOTS)
+// folder browser (restricted to VIDEODYNE_BROWSE_ROOTS)
 function safePath(p) {
   if (!p || typeof p !== 'string') return null;
   const real = path.resolve(p);
@@ -382,7 +386,7 @@ app.put('/api/settings', async (req) => {
   const scanKeys = ['autoScan', 'scanIntervalMinutes', 'scanOnStartup', 'hwEncoder', 'channelBug', 'lyrics', 'radioStyle', 'streamHeight', 'language', 'subtitleMode']; // these never need a re-plan
   const plan = (s) => JSON.stringify(Object.entries(s).filter(([k]) => !scanKeys.includes(k)));
   if (plan(before) !== plan(after)) {
-    const inferKeys = ['minChannelMinutes', 'tvGenreChannelsForAll', 'movieStudioChannels', 'movieStudioMinFilms', 'movieDecadeChannels'];
+    const inferKeys = ['minChannelMinutes', 'minTrackSeconds', 'maxTrackSeconds', 'tvGenreChannelsForAll', 'movieStudioChannels', 'movieStudioMinFilms', 'movieDecadeChannels'];
     if (inferKeys.some((k) => before[k] !== after[k])) inferChannels(db);
     await rescheduleFuture(db);
   }
@@ -496,7 +500,7 @@ fs.rmSync(path.join(cfg.tmpDir, 'live'), { recursive: true, force: true });
 process.on('unhandledRejection', (e) => console.error('unhandled rejection (continuing):', e));
 process.on('uncaughtException', (e) => console.error('uncaught exception (continuing):', e));
 try { await app.listen({ port: cfg.port, host: '0.0.0.0' }); } catch (e) { console.error('cannot listen on port', cfg.port, e); process.exit(1); }
-console.log(`WBTV listening on :${cfg.port}`);
+console.log(`Videodyne listening on :${cfg.port}`);
 
 detectHw(getSettings(db).hwEncoder).catch((e) => console.error('hw detect failed', e));
 ensureSchedule(db).catch((e) => console.error('initial schedule failed', e)); // yields between channels, never blocks the server

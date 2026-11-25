@@ -1,6 +1,6 @@
-# Everything WBTV does
+# Everything Videodyne does
 
-The complete feature list, by area. For what's new in each version see the [releases](https://github.com/WB2024/WBTV/releases). For where WBTV is ahead of, and behind, other tools see [COMPARISON.md](COMPARISON.md).
+The complete feature list, by area. For what's new in each version see the [releases](https://github.com/WB2024/WBTV/releases). For where Videodyne is ahead of, and behind, other tools see [COMPARISON.md](COMPARISON.md).
 
 ## Channels, built for you
 
@@ -20,18 +20,18 @@ The complete feature list, by area. For what's new in each version see the [rele
 ## Music video discovery and download (IMVDb, optional)
 
 - Setup > **Music videos**: lists the artists in your music library (Navidrome or folders), looks each one up on [IMVDb](https://imvdb.com/developers/api), and shows their videos with *in your library* marked. Download one, a selection, or everything you are missing.
-- Saved as `Artist/Artist - Title.mp4` with a clean `.nfo` (the real release year from IMVDb, your library's genre for that artist, the IMVDb id and the director) and a poster, then WBTV rescans so the video appears in your channels.
-- You need your own free IMVDb app key. It is stored on the server and never shown in the browser. It is off until a **WBTV password**, the key, and a **writable music video folder** are all in place: WBTV keeps your media read-only unless you choose to make that one folder writable.
+- Saved as `Artist/Artist - Title.mp4` with a clean `.nfo` (the real release year from IMVDb, your library's genre for that artist, the IMVDb id and the director) and a poster, then Videodyne rescans so the video appears in your channels.
+- You need your own free IMVDb app key. It is stored on the server and never shown in the browser. It is off until a **Videodyne password**, the key, and a **writable music video folder** are all in place: Videodyne keeps your media read-only unless you choose to make that one folder writable.
 - One download at a time, at low priority; a failed download shows its reason and can be retried; the queue survives a restart.
 - **`tools/mvdl.py`** is a lightweight command-line version that runs on your own computer: it reads artists from Navidrome (`top 20` takes the artists with the most songs), finds official videos through MusicBrainz and yt-dlp, appends "(official music video)" to searches, and can work through text files of YouTube links (one file per artist, or a folder of them). It only keeps official uploads (a live recording is fine when it is the official video), and rejects lyric or audio videos and still images. See [tools/README.md](../tools/README.md).
-- Downloading from YouTube or Vimeo may go against their terms. It is your choice to use it, and WBTV does not enable it by default.
+- Downloading from YouTube or Vimeo may go against their terms. It is your choice to use it, and Videodyne does not enable it by default.
 
 ## Channel groups
 
 - Every TV, movie, music-video and clips library can be given a **channel group** (Setup > Libraries). Libraries that share a group name become **one channel**: for example *Stand Up Films*, *Stand Up Shows* and their *Unmanaged* folders all in the group "Stand Up".
 - Each library chooses how it becomes channels: **genre / studio channels** (the default), **one channel** (only the group channel), or **both**.
 - **Clips / interviews** is a library type for short videos of every kind: one channel, shuffled back to back, no ad breaks.
-- `tools/jfplan.mjs` reads a Jellyfin server and proposes a matching set of WBTV libraries and groups (read-only).
+- `tools/jfplan.mjs` reads a Jellyfin server and proposes a matching set of Videodyne libraries and groups (read-only).
 
 ## The schedule
 
@@ -40,7 +40,7 @@ The complete feature list, by area. For what's new in each version see the [rele
 - **History**: scroll back through what already aired.
 - **Programmes start on the dot**, with a lead-in of ads and announcements where enabled.
 - **Always tunable**: between programmes a channel is still on air (ad breaks, announcements).
-- **Automatic dayparting**: WBTV leans towards what suits the time of day from your own genres and age ratings: cartoons after school and on Saturday morning, mature and horror content late. Switch it off in Settings.
+- **Automatic dayparting**: Videodyne leans towards what suits the time of day from your own genres and age ratings: cartoons after school and on Saturday morning, mature and horror content late. Switch it off in Settings.
 - **Stable re-planning**: a rescan only re-plans what hasn't aired yet and doesn't reshuffle the rest of the guide.
 
 ## Guide and watching
@@ -64,9 +64,10 @@ The complete feature list, by area. For what's new in each version see the [rele
   - Choose how many programmes to mention and how long the slot may run; announcements never hold up a tune-in.
 - **Classic ad breaks**: mid-programme breaks of a length and frequency you set.
   - Sources: YouTube, archive.org, direct links (downloaded once with yt-dlp), or **local folders** tagged *TV* or *Movies* so trailers only play on movie channels.
+  - **archive.org items are streamed, not downloaded**: paste a `archive.org/details/...` or `/download/...` address and Videodyne reads its metadata once, then plays the file straight from archive.org as it airs, so nothing is added to `config/ads`. The small h.264 copy is chosen (never the MPEG2 master), and the item's year goes into its title so era-matching works. Everything else is still downloaded once by yt-dlp.
   - **Long ad-break compilations** supported: each break plays a random chunk, like joining a recorded break in progress.
   - **Era-matched adverts**: the year is read from an ad's title or folder name (`1994`, `1990s`, `80s`) and ads from the programme's era are preferred.
-  - WBTV ships with no ads; they come from you.
+  - Videodyne ships with no ads; they come from you.
 - **Channel logos / name bug** on programmes (upload a logo or fall back to the channel name).
 - **Station idents**: a short ident before each programme: a generated card (big channel number and name), or **your own clips** from a folder added as *Station idents / bumpers* (up to 20 seconds each, chosen at random).
 - **Closedown**: an overnight test card ("Off air") in a time window you choose, shown in the guide too.
@@ -83,7 +84,7 @@ The complete feature list, by area. For what's new in each version see the [rele
 
 - **Music-video channels** playing back to back with an **Artist - Title lower-third**. Uses `<musicvideo>` NFOs, or just name files `Artist - Title.mp4`.
 - **Radio stations** from audio files (mp3, flac, m4a, ogg, ...): the screen shows **cover art, now-playing text and a live waveform**.
-  - **Tidy stations**: a song plays once across different releases, tracks under 45 seconds or over 15 minutes are skipped, and sub-genres fold into one station per family.
+  - **Tidy stations**: a song plays once across different releases, tracks under 45 seconds or over 15 minutes are skipped (both adjustable), and sub-genres fold into one station per family.
   - **Station look** (Setup): classic, a blurred cover-art backdrop, or frequency bars.
   - **Lyrics**: a time-synced `.lrc`, an `.srt`, or a `.txt`/`.lyrics` file next to the track (same name), or lyrics stored in the file's tags. Synced lyrics follow the song with the next line previewed; plain text is paged across the song as an estimate. Switch off in Settings.
   - **Cover art** from `cover.jpg` / `folder.jpg` / `front.jpg` in the folder, or the picture embedded in the files (read once per album and filled in gradually for existing libraries).
@@ -101,35 +102,47 @@ The complete feature list, by area. For what's new in each version see the [rele
 - YouTube live (including separate video and audio streams) is resolved with yt-dlp each time you tune in.
 - Large playlists start with the first 80 working channels enabled; enable more in bulk.
 
-## Jellyfin and Emby as a source
+## Jellyfin, Emby and Plex as a source
 
 - Setup > Libraries > *Read TV, films and music videos from Jellyfin / Emby*: enter the server address and an API key (Jellyfin: Dashboard > API Keys), then add the TV, movie and music-video libraries you want. Works with Jellyfin 12 (which dropped the old `X-Emby-Token` / `api_key`) and with older Jellyfin and Emby.
 - Titles, plots, studios, genres, ratings, cast and pictures come from the server, so channels are inferred exactly as from folders (a studio becomes a channel, a genre a themed one). Folder and server libraries can be mixed.
-- Playback reads the original files from the server over HTTP; the API key is kept on the WBTV server, is never put in an item path, and is hidden from logs.
+- Playback reads the original files from the server over HTTP; the API key is kept on the Videodyne server, is never put in an item path, and is hidden from logs.
+- **Plex** works the same way: choose *Plex*, enter the address (port 32400) and paste a token — any Plex media URL carries one as `X-Plex-Token`. It is sent as a header, never in an item path, and it is redacted from logs like the other keys. Film and TV libraries are supported; a music library says so instead of being offered.
 - If the server is down during a scan, nothing is removed. Pictures are downloaded a few hundred at a time per scan.
-- Not yet: Plex as a source, music/audiobooks from a server, and fetching subtitles through the server's own subtitle endpoint (embedded subtitles are extracted by reading the file).
+- Not yet: audiobooks from a media server, and fetching subtitles through the server's own subtitle endpoint (embedded subtitles are extracted by reading the file).
 
 ## Navidrome as a source (music)
 
 - Add a Navidrome (or other Subsonic / OpenSubsonic) server under Setup > Libraries with its address and your login; choose *All music* or a single music folder. Songs become radio stations by genre and decade, exactly as from folders.
 - **Cover art** (one picture per album) and **lyrics** (time-synced where the server has them) come from the server, so radio screens look right even when the files carry no embedded art.
-- WBTV stores a login token and salt, not your password, and hides them from logs.
-- Not yet: spoken-word libraries from Audiobookshelf, and Plex.
+- Videodyne stores a login token and salt, not your password, and hides them from logs.
+- Not yet: spoken-word libraries from Audiobookshelf, and music from Plex (a Plex *music* library is refused; films and TV only).
 
 ## Works with your other apps
 
-- **HDHomeRun emulation**: add WBTV as a Live TV tuner in **Plex, Jellyfin and Emby**. The MPEG-TS stream is remuxed, not re-encoded.
+- **HDHomeRun emulation**: add Videodyne as a Live TV tuner in **Plex, Jellyfin and Emby**. The MPEG-TS stream is remuxed, not re-encoded.
 - **M3U playlist** (`/iptv/playlist.m3u`) and **XMLTV guide** (`/iptv/epg.xml`) for TiviMate, VLC, Kodi, Channels and any IPTV app.
 - **Documented HTTP API** ([docs/API.md](API.md)): everything the web UI and the Android app do is available to scripts and your own clients.
 - `GET /api/status` for monitoring (channels running, viewers, load, memory, voice queue); `GET /healthz` for container health checks.
 
-## Android TV / Fire TV app
+## Android apps
 
-- Native **Kotlin / Jetpack Compose / Media3**, built for the remote. Opens on your last channel like switching a TV on.
-- The same guide, themes, filter chips and pause/rewind as the web UI, plus channel surfing and number entry.
+Two apps from one module, and they install side by side: the **TV** one for a remote and the **phone** one for a thumb. Both are native **Kotlin / Jetpack Compose / Media3**, need Android 8+, and read the same API as the web guide.
+
+**Android TV / Fire TV** — `com.videodyne.tv`, landscape, offered only to leanback devices
+
+- Built for the remote: opens on your last channel like switching a TV on, surfs with Up/Down, tunes with the number keys.
+- The same guide, themes, filter chips and pause/rewind as the web UI.
 - A full **settings screen** on the TV: theme, fullscreen behaviour, access key, and the server's own switches (ad breaks, announcements, logos, idents, closedown, dayparting, era-matched ads, stream size, rescans, scan now).
 - Crash-recovery relaunch, retries while a channel is starting, a "Tuning..." indicator, and surf debouncing so flipping through channels doesn't flood the server.
 - Needs Android 8+; tested on a Fire TV (Android 9). APK in each [release](https://github.com/WB2024/WBTV/releases).
+
+**Phone** — `com.videodyne.app`, touch, portrait or landscape
+
+- A player pane above a list: **On now** (number, what is on, minutes left, tap to watch) and a **Guide** you open channel by channel, where tapping an airing programme tunes it and any other programme explains itself.
+- Transport by tap: pause, −30 s, back to live, expand to full screen. No D-pad, no focus ring anywhere.
+- **Settings** for the connection, the themes and the server's own switches — the same ones the TV app has.
+- Opening the app starts no stream: it tunes when you pick a channel, so a phone in a pocket never makes the server encode.
 
 ## Samsung (Tizen) TV app
 
@@ -151,7 +164,7 @@ The complete feature list, by area. For what's new in each version see the [rele
 ## Reliability and safety
 
 - **Your media is read-only** and is never modified.
-- **Offline-share protection**: if a network share or mount disappears, WBTV will not wipe its library; it waits for a second scan to confirm before removing anything.
+- **Offline-share protection**: if a network share or mount disappears, Videodyne will not wipe its library; it waits for a second scan to confirm before removing anything.
 - Settings are validated before they are saved; a bad value can't hang the scheduler.
 - The server logs and continues on unexpected errors instead of dying; the container has a health check.
 - **Optional password and access key** for browsers, apps, IPTV players and tuners.

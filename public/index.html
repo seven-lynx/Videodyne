@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WBTV</title>
-  <script>document.documentElement.dataset.theme = localStorage.getItem("wbtv-theme") || "classic";</script>
+  <title>Videodyne</title>
+  <script>document.documentElement.dataset.theme = localStorage.getItem("videodyne-theme") || localStorage.getItem("wbtv-theme") || "classic";</script>
   <link rel="icon" type="image/png" href="/img/icon.png">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <!-- title strip: only the Satellite themes show it -->
-  <div class="gbar" id="gbar"><img src="/img/logo.png" alt="WBTV"><span class="gdate" id="gdate"></span><b class="gname" id="gname"></b></div>
+  <div class="gbar" id="gbar"><img src="/img/logo.png" alt="Videodyne"><span class="gdate" id="gdate"></span><b class="gname" id="gname"></b></div>
   <header class="top">
     <div class="player" id="player">
       <video id="video" playsinline></video>
       <div class="osd" id="osd"></div>
       <button class="backbtn" id="backBtn">☰ Back to Guide</button>
-      <div class="nosignal" id="nosignal"><img src="/img/logo-stripes.png" alt="WBTV"><span>Select a channel and press Enter</span></div>
+      <div class="nosignal" id="nosignal"><img src="/img/logo-stripes.png" alt="Videodyne"><span>Select a channel and press Enter</span></div>
     </div>
     <div class="info" id="info"></div>
     <div class="clock" id="clock"></div>
@@ -24,7 +24,7 @@
   <nav class="toolbar" id="toolbar"></nav>
   <main class="guide" id="guide"><div class="loading"><img src="/img/splash.png" alt="Loading your TV guide"></div></main>
   <footer class="keys">
-    <img class="brand" src="/img/logo.png" alt="WBTV"><span><b>↑↓←→</b> browse</span><span><b>Enter</b> watch</span><span><b>0-9</b> channel</span>
+    <img class="brand" src="/img/logo.png" alt="Videodyne"><span><b>↑↓←→</b> browse</span><span><b>Enter</b> watch</span><span><b>0-9</b> channel</span>
     <span><b>Space</b> pause</span><span><b>←/→</b> rewind / skip (fullscreen)</span><span><b>L</b> live</span><span><b>[ ]</b> filter</span><span><b>F</b> fullscreen</span><span><b>G / Esc</b> guide</span>
     <button id="settingsBtn">⚙ Setup</button>
   </footer>
