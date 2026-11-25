@@ -35,7 +35,7 @@ Videodyne is one of several projects that turn your media into live TV. They mak
 | **Adverts matched to the era of the programme** | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Themes (Freeview, Satellite, 90s, Aero, ...) | ✅ 9 | ❌ | ❌ | 🟡 | ✅ |
 | One-container Docker install | ✅ | ✅ | ✅ | ❌ | n/a |
-| Plex / Jellyfin / Emby as a source | 🟡 Jellyfin, Emby, Navidrome (Plex soon) | ✅ | ✅ | ❌ | ❌ |
+| Plex / Jellyfin / Emby as a source | 🟡 Jellyfin, Emby, Plex and Navidrome (films and TV from all three; music from Navidrome) | ✅ | ✅ | ❌ | ❌ |
 | **M3U + XMLTV output / HDHomeRun emulation** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Hardware transcoding | 🟡 VAAPI/NVENC, new | ✅ | ✅ | n/a | ❌ |
 | Hand-built schedules, dayparting, drag-and-drop editor | ❌ | ✅ | ✅ | ✅ | ❌ |

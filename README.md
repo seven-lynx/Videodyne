@@ -156,7 +156,7 @@ Rename, renumber or switch off anything in **Setup**. Your edits survive rescans
 - 🔌 **Tuner output**: HDHomeRun emulation, an **M3U playlist** and **XMLTV guide** for Plex, Jellyfin, Emby, TiviMate, VLC, Kodi and more
 - 🗄️ **Jellyfin, Emby, Plex and Navidrome as a source**: connect with an API key or a Plex token (or a Navidrome login) and Videodyne builds channels from those libraries too. Folders still work and you can mix both: [which is better for you?](#folders-or-a-media-server)
 - 🌐 **Live TV**: add any M3U/M3U8 playlist, HLS stream, or YouTube live link
-- 📱 **Native Android TV / Fire TV app** (Kotlin, Compose, Media3) with a full on-TV settings screen, and a **[Samsung (Tizen) TV app](#samsung-tv-app)**, plus a **[desktop client](desktop/README.md)** for Windows and Linux
+- 📱 **Two Android apps** from one module (Kotlin, Compose, Media3): an **Android TV / Fire TV** one built for the remote, with a full on-TV settings screen, and a **phone** one built for a thumb — both installable side by side — plus a **[Samsung (Tizen) TV app](#samsung-tv-app)** and a **[desktop client](desktop/README.md)** for Windows and Linux
 - 🔒 **Optional password and access key**, and a documented [HTTP API](docs/API.md)
 - ⚡ **Hardware encoding** (Intel/AMD VAAPI, NVIDIA NVENC) with an automatic self-test and CPU fallback
 
@@ -328,9 +328,11 @@ Needs JDK 17+ and the Android SDK (e.g. from Android Studio):
 
 ```bash
 cd android
-./gradlew assembleDebug        # -> app/build/outputs/apk/debug/app-debug.apk
+./gradlew :app:assembleTvDebug :app:assemblePhoneDebug
+# -> app/build/outputs/apk/tv/debug/app-tv-debug.apk        the TV / Fire TV app
+# -> app/build/outputs/apk/phone/debug/app-phone-debug.apk  the phone app
 adb connect <tv-ip>:5555
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/tv/debug/app-tv-debug.apk
 ```
 </details>
 
@@ -396,11 +398,10 @@ Scaling and on-screen captions still run on the CPU; only the H.264 encode moves
 |---|---|---|
 | `TZ` | `UTC` | Your timezone, so the guide and day-parting match your clock |
 | `VIDEODYNE_WIDTH` / `VIDEODYNE_HEIGHT` | `1280` / `720` | Stream resolution (also in Settings > Stream size) |
-| `VIDEODYNE_CRF` | `23` | x264 quality (lower = better and bigger) |
-| `VIDEODYNE_PRESET` | `veryfast` | x264 speed preset |
 | `VIDEODYNE_BROWSE_ROOTS` | `/mnt,/media,/data` | Folders the in-app folder browser may show |
 | `VIDEODYNE_DEBUG` | off | Log every channel start-up with timings |
-| `PIPER_BIN` / `PIPER_VOICES` | `/opt/piper/piper` / `/opt/piper/voices` | Speech engine and voice folder (already in the image). Extra voices install to `/config/voices` |
+
+There are fifteen more: `PORT`, `VIDEODYNE_CONFIG`, `VIDEODYNE_TMP`, `VIDEODYNE_CRF`, `VIDEODYNE_PRESET`, `FFMPEG_PATH`, `FFPROBE_PATH`, `YTDLP_PATH`, `PIPER_BIN`, `PIPER_VOICES`, `VIDEODYNE_FONT`, `VIDEODYNE_SCAN_CONCURRENCY`, `VIDEODYNE_HWACCEL`, `VIDEODYNE_VAAPI_DEVICE` and `IMVDB_BASE`. [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) lists every one with its default and effect.
 
 ### Security
 

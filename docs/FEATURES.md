@@ -109,14 +109,14 @@ The complete feature list, by area. For what's new in each version see the [rele
 - Playback reads the original files from the server over HTTP; the API key is kept on the Videodyne server, is never put in an item path, and is hidden from logs.
 - **Plex** works the same way: choose *Plex*, enter the address (port 32400) and paste a token — any Plex media URL carries one as `X-Plex-Token`. It is sent as a header, never in an item path, and it is redacted from logs like the other keys. Film and TV libraries are supported; a music library says so instead of being offered.
 - If the server is down during a scan, nothing is removed. Pictures are downloaded a few hundred at a time per scan.
-- Not yet: music or audiobooks from a media server, and fetching subtitles through the server's own subtitle endpoint (embedded subtitles are extracted by reading the file).
+- Not yet: audiobooks from a media server, and fetching subtitles through the server's own subtitle endpoint (embedded subtitles are extracted by reading the file).
 
 ## Navidrome as a source (music)
 
 - Add a Navidrome (or other Subsonic / OpenSubsonic) server under Setup > Libraries with its address and your login; choose *All music* or a single music folder. Songs become radio stations by genre and decade, exactly as from folders.
 - **Cover art** (one picture per album) and **lyrics** (time-synced where the server has them) come from the server, so radio screens look right even when the files carry no embedded art.
 - Videodyne stores a login token and salt, not your password, and hides them from logs.
-- Not yet: spoken-word libraries from Audiobookshelf, and Plex.
+- Not yet: spoken-word libraries from Audiobookshelf, and music from Plex (a Plex *music* library is refused; films and TV only).
 
 ## Works with your other apps
 
@@ -125,13 +125,24 @@ The complete feature list, by area. For what's new in each version see the [rele
 - **Documented HTTP API** ([docs/API.md](API.md)): everything the web UI and the Android app do is available to scripts and your own clients.
 - `GET /api/status` for monitoring (channels running, viewers, load, memory, voice queue); `GET /healthz` for container health checks.
 
-## Android TV / Fire TV app
+## Android apps
 
-- Native **Kotlin / Jetpack Compose / Media3**, built for the remote. Opens on your last channel like switching a TV on.
-- The same guide, themes, filter chips and pause/rewind as the web UI, plus channel surfing and number entry.
+Two apps from one module, and they install side by side: the **TV** one for a remote and the **phone** one for a thumb. Both are native **Kotlin / Jetpack Compose / Media3**, need Android 8+, and read the same API as the web guide.
+
+**Android TV / Fire TV** — `com.videodyne.tv`, landscape, offered only to leanback devices
+
+- Built for the remote: opens on your last channel like switching a TV on, surfs with Up/Down, tunes with the number keys.
+- The same guide, themes, filter chips and pause/rewind as the web UI.
 - A full **settings screen** on the TV: theme, fullscreen behaviour, access key, and the server's own switches (ad breaks, announcements, logos, idents, closedown, dayparting, era-matched ads, stream size, rescans, scan now).
 - Crash-recovery relaunch, retries while a channel is starting, a "Tuning..." indicator, and surf debouncing so flipping through channels doesn't flood the server.
 - Needs Android 8+; tested on a Fire TV (Android 9). APK in each [release](https://github.com/WB2024/WBTV/releases).
+
+**Phone** — `com.videodyne.app`, touch, portrait or landscape
+
+- A player pane above a list: **On now** (number, what is on, minutes left, tap to watch) and a **Guide** you open channel by channel, where tapping an airing programme tunes it and any other programme explains itself.
+- Transport by tap: pause, −30 s, back to live, expand to full screen. No D-pad, no focus ring anywhere.
+- **Settings** for the connection, the themes and the server's own switches — the same ones the TV app has.
+- Opening the app starts no stream: it tunes when you pick a channel, so a phone in a pocket never makes the server encode.
 
 ## Samsung (Tizen) TV app
 

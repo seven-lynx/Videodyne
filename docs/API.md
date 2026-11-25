@@ -113,3 +113,9 @@ spellings it may ask for.
 | `/discover.json`, `/lineup.json`, `/lineup_status.json`, `/device.xml` | HDHomeRun emulation for Plex, Jellyfin, Emby and Channels |
 
 When a password is set, URLs shown in Setup > Settings > Security already include `?key=`.
+
+**A tuner and a password do not mix yet.** The four HDHomeRun paths above sit behind the access gate,
+and a client has no way to present a key during discovery, so Plex, Jellyfin, Emby and Channels report
+the device as offline while a password is set. Either turn the password off, or point the client at a
+reachable URL and wait for the pairing fix (issue #33). The M3U and XMLTV paths do work with a password,
+because their URLs can carry `?key=`.

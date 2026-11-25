@@ -21,5 +21,6 @@ The Android TV app lives in `android/` (JDK 17+, Android SDK): `./gradlew assemb
 ## Pull requests
 - Keep changes focused, and add or update a test where it makes sense (`test/`).
 - `npm test` must pass; CI runs it and builds the image for amd64 and arm64.
-- The web UI is deliberately dependency-free vanilla JS; please keep it that way.
+- The web UI is deliberately dependency-free vanilla JS; please keep it that way. See
+  [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the module, route, setting and library-type checklists.
 - By contributing you agree your work is released under the project's [MIT licence](LICENSE).
