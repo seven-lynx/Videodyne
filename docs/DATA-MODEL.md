@@ -42,7 +42,7 @@ else reading them is a consumer.
 | `shows` | a series as its NFO describes it: studio, genre, poster | `scanner.js` | `items.show_id` cascades from it |
 | `items` | one playable file: `kind` ∈ `episode`, `movie`, `track`, `musicvideo`, `clip`, `talk`, `live` | `scanner.js` | cascades from `libraries` and `shows`; deleting one cascades to `channel_items`, `programmes`, `blocks` |
 | `live_streams` | one IPTV/HLS/YouTube source: `src_kind` ∈ `hls`, `youtube`, playlist entry, with `alive` and `checked` | `iptv.js` | cascades from `libraries` |
-| `channels` | one station: `key` (unique), `kind`, `auto_name`, `name_override`, `number`, `enabled`, `item_count`, `grp` | `channels.js` | cascades to `channel_items`, `programmes`, `blocks` |
+| `channels` | one station: `key` (unique), `kind`, `auto_name`, `name_override`, `number`, `enabled`, `item_count`, `grp`, `network` | `channels.js` | cascades to `channel_items`, `programmes`, `blocks` |
 | `channel_items` | membership, `PRIMARY KEY (channel_id, item_id)` | `channels.js:262` | both sides cascade |
 | `ads` | an advert, ident or bumper: `status` ∈ `pending`, `resolving`, `ready`, `error`; `kind` ∈ `all`, `tv`, `movie`, `ident` | `ads.js`, `scanner.js` (an ads library) | cascades from `libraries` |
 | `programmes` | what the guide shows: one row per airing, `start`/`end` | `scheduler.js` | cascades from `channels` and `items` |
@@ -62,7 +62,7 @@ Every column below exists in `SCHEMA`; the note is only where the name does not 
 | `shows` | `id`, `library_id`, `path` UNIQUE, `title`, `plot`, `year`, `rating`, `mpaa`, `studios`, `genres`, `poster` (a file under `config/covers`) |
 | `items` | `id`, `library_id`, `show_id`, `kind`, `path` UNIQUE, `title`, `plot`, `year`, `season`, `episode`, `aired`, `rating`, `mpaa`, `runtime`, `probed`, `studios`, `genres`, `actors`, `poster`, `mtime`, `size`, `nfo_mtime` (when the sidecar was last read), `channel_id` (**unused**, #34), `artist`, `album`, `probe_attempts`, `probe_checked` (seconds) |
 | `live_streams` | `id`, `library_id`, `name`, `url`, `grp` (the playlist's `group-title`), `logo`, `tvg_id`, `src_kind` ∈ `hls`, `youtube`, …, `alive` (NULL = never checked), `checked` (seconds), `channel_id`, `UNIQUE(library_id, url)` |
-| `channels` | `id`, `key` UNIQUE (the inference identity, e.g. `studio:bbc one`), `kind` ∈ `tv`, `movie`, `music`, `radio`, `clips`, `live`, `talk`, `auto_name` (what inference chose), `name_override` (what the user chose — `COALESCE`d over the auto name at every read), `number`, `enabled`, `item_count` (denormalised, recomputed by `inferChannels`), `grp` |
+| `channels` | `id`, `key` UNIQUE (the inference identity, e.g. `studio:bbc one`), `kind` ∈ `tv`, `movie`, `music`, `radio`, `clips`, `live`, `talk`, `auto_name` (what inference chose), `name_override` (what the user chose — `COALESCE`d over the auto name at every read), `number`, `enabled`, `item_count` (denormalised, recomputed by `inferChannels`), `grp`, `network` (the brand a genre, era or catch-all channel belongs to — `channels.js`'s roster; NULL for a studio, group, talk or live channel) |
 | `channel_items` | `channel_id`, `item_id`, PK on both |
 | `ads` | `id`, `title`, `source` UNIQUE (the URL it came from), `file` (a path, or an archive.org URL that is streamed rather than stored), `duration`, `status`, `error`, `kind`, `library_id` |
 | `programmes` | `id`, `channel_id`, `item_id`, `start`, `end` — one row per airing; a live channel has none |
@@ -103,7 +103,7 @@ rewriting every path.
 
 ## 6. Migrations that exist today
 
-`migrate()` (`db.js:110-139`) is six independent repairs, each guarded by what it finds, so it is safe
+`migrate()` (`db.js:110-141`) is six independent repairs, each guarded by what it finds, so it is safe
 to run on every open:
 
 1. a pre-`music` `libraries` table whose `CHECK` refused every new type is rebuilt without it
@@ -111,7 +111,7 @@ to run on every open:
 2. `items.artist`, `items.album`;
 3. `items.probe_attempts`, `items.probe_checked`;
 4. `blocks.promo_id`;
-5. `channels.grp`;
+5. `channels.grp`, `channels.network`;
 6. `libraries.channel_group`, `libraries.group_mode`, `mv_jobs.force`, `sources.salt`, `ads.kind`.
 
 A schema change that drops or renames a populated column is not a migration — it is an owner

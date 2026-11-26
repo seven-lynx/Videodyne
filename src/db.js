@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_shows_lib ON shows(library_id);
 CREATE TABLE IF NOT EXISTS channels (
   id INTEGER PRIMARY KEY, key TEXT NOT NULL UNIQUE, kind TEXT NOT NULL,
   auto_name TEXT NOT NULL, name_override TEXT, number INTEGER, enabled INTEGER DEFAULT 1,
-  item_count INTEGER DEFAULT 0, grp TEXT
+  item_count INTEGER DEFAULT 0, grp TEXT, network TEXT
 );
 CREATE TABLE IF NOT EXISTS channel_items (
   channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
@@ -126,6 +126,8 @@ function migrate(db) {
   // older DBs: blocks.promo_id (announcement slots)
   if (!db.prepare('PRAGMA table_info(blocks)').all().some((c) => c.name === 'promo_id')) db.exec('ALTER TABLE blocks ADD COLUMN promo_id INTEGER');
   if (!db.prepare('PRAGMA table_info(channels)').all().some((c) => c.name === 'grp')) db.exec('ALTER TABLE channels ADD COLUMN grp TEXT'); // the channel group its programmes come from (a chip in the guide)
+  // the network a genre channel belongs to (Nightshade, Cadence, ...): one brand word shared by the channel and its film or radio sibling
+  if (!db.prepare('PRAGMA table_info(channels)').all().some((c) => c.name === 'network')) db.exec('ALTER TABLE channels ADD COLUMN network TEXT');
   // libraries can be given a channel group (libraries sharing one merge into a channel) and a mode: inferred | single | both
   const lcols = db.prepare('PRAGMA table_info(libraries)').all().map((c) => c.name);
   if (!lcols.includes('channel_group')) db.exec('ALTER TABLE libraries ADD COLUMN channel_group TEXT');

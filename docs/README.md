@@ -11,6 +11,7 @@ checked rather than believed.
 | install it, add libraries and watch something | [FEATURES.md](FEATURES.md) — every user-visible feature, by area |
 | understand how the code fits together | [ARCHITECTURE.md](ARCHITECTURE.md) — the process, the module graph, startup, the channel lifecycle |
 | know what the database holds | [DATA-MODEL.md](DATA-MODEL.md) — every table, column and invariant |
+| know what a channel is called, and why | [CHANNELS.md](CHANNELS.md) — the roster: every network, its channels, the eras and the catch-alls |
 | change a switch in the UI, or find out what it does | [SETTINGS.md](SETTINGS.md) — all 34 settings, their ranges and their effect |
 | know why a particular programme is on now | [SCHEDULE.md](SCHEDULE.md) — the horizon, the picking rules, ad breaks, dayparting, closedown |
 | set a deploy-time option or size the container | [ENVIRONMENT.md](ENVIRONMENT.md) — every environment variable and the container's facts |

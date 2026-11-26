@@ -25,7 +25,7 @@ test('SCHEMA builds the columns that used to live only in migrate()', () => {
     assert.ok(columns(db, 'channels').includes('grp'));
     // At the end of each block, so a fresh table's order is what migrate() leaves on an old one.
     assert.deepEqual(columns(db, 'libraries').slice(-2), ['channel_group', 'group_mode']);
-    assert.deepEqual(columns(db, 'channels').slice(-1), ['grp']);
+    assert.deepEqual(columns(db, 'channels').slice(-2), ['grp', 'network']);
     db.prepare("INSERT INTO libraries(id,name,path,type) VALUES(1,'Films','/media/films','movies')").run();
     assert.equal(db.prepare('SELECT group_mode FROM libraries WHERE id=1').get().group_mode, 'inferred', 'the NOT NULL default is half the fix');
   } finally {
