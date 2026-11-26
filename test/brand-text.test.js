@@ -108,4 +108,34 @@ test('every knob keeps the old name behind the new one, and the container agrees
   assert.ok(cfgDir, 'the config dir default is spelled once');
   assert.ok(read('Dockerfile').includes(`VIDEODYNE_CONFIG=${cfgDir[1]}`), 'the image and the default agree');
 });
+// The desktop shell is fork territory (ruling 6.4), so the rename reaches four files no `src/` test
+// reads, and two of its failures would be silent: Electron names the profile directory after
+// `productName`, so the old one has to be read before the new one is written, and the release glob in
+// `desktop.yml` names the artefact from a second file. Both are pinned below.
+const DESKTOP = ['desktop/main.js', 'desktop/preload.js', 'desktop/connect.html', 'desktop/README.md'];
+// The pre-rename header is still sent on purpose - a server older than the wire-literal rename reads
+// only that one - and the pre-rename profile directory is still read on purpose. Same accepted-old-name
+// pattern as the theme keys above, so both are stripped before the scan.
+const KEPT = /x-wbtv-key|(?:'|`)WBTV(?:'|`)/g;
+
+test('the desktop shell and its installer carry the new name', () => {
+  const pkg = JSON.parse(read('desktop/package.json'));
+  assert.equal(pkg.name, 'videodyne-desktop', 'the package is named after the product');
+  assert.equal(pkg.build.appId, 'com.videodyne.desktop', 'a new install identity, beside com.videodyne.tv');
+  assert.equal(pkg.build.productName, 'Videodyne');
+  assert.match(pkg.build.artifactName, /^Videodyne-Desktop-/, 'the artefact is named after the product');
+  const stale = DESKTOP.filter((f) => /wbtv/i.test(read(f).replace(KEPT, '')));
+  assert.deepEqual(stale, [], 'desktop files still naming the old product');
+});
+
+test('the shell keeps the old header and the old profile, and CI follows the artefact name', () => {
+  const main = read('desktop/main.js');
+  assert.match(main, /requestHeaders\['x-videodyne-key'\] = s\.key/, 'every request carries the new header');
+  assert.match(main, /requestHeaders\['x-wbtv-key'\] = s\.key/, 'and the one a pre-rename server reads');
+  assert.match(main, /\{ 'x-videodyne-key': s\.key, 'x-wbtv-key': s\.key \}/, 'the status probe carries both too');
+  assert.match(main, /appData'\), 'WBTV', 'settings\.json'/, 'the profile moved with productName, so the old one is read');
+  assert.match(main, /catch \{ \/\* unreadable profile/, 'carrying the profile over may not stop the launch');
+  assert.match(read('.github/workflows/desktop.yml'), /path: desktop\/dist\/Videodyne-Desktop-\*/, 'the uploaded artefact');
+});
+
 

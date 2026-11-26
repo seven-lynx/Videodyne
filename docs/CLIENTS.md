@@ -8,7 +8,7 @@ Four ways to watch, one server. Everything a client needs comes from the HTTP AP
 | Web UI | `public/` | vanilla JS, no framework and no bundler | 795 (`app.js`) + 18.7 KB CSS | `hls.js` from `/vendor/`, or native HLS on Safari |
 | Android TV / Fire TV | `android/`, the `tv` flavor | Kotlin, Jetpack Compose, Media3 | 544 in `src/tv` + 846 shared | ExoPlayer |
 | Android (phone) | `android/`, the `phone` flavor | Kotlin, Jetpack Compose, Media3 | 610 in `src/phone` + 846 shared | ExoPlayer |
-| Desktop | `desktop/` | Electron shell + Node supervisor | 121 | the web UI in a `BrowserWindow` |
+| Desktop | `desktop/` | Electron shell + Node supervisor | 131 (`main.js` + `preload.js` + `connect.html`) | the web UI in a `BrowserWindow` |
 
 The web UI is also the setup screen: libraries, sources, channels, ads, announcements, music videos and
 security all live in it. Both Android apps carry a settings screen for the server's switches.
