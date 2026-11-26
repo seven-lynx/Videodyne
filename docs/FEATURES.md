@@ -144,14 +144,6 @@ Two apps from one module, and they install side by side: the **TV** one for a re
 - **Settings** for the connection, the themes and the server's own switches — the same ones the TV app has.
 - Opening the app starts no stream: it tunes when you pick a channel, so a phone in a pocket never makes the server encode.
 
-## Samsung (Tizen) TV app
-
-- A TV-only client for Samsung TVs in plain JavaScript (no build step), with the same guide, chip row (one chip per channel group), banner and number entry as the other apps. Music and radio slots show the picture and description of the track playing now.
-- Live playback through Samsung's **AVPlay**; a desktop browser falls back to a `<video>` tag, and `tizen/dev.mjs` lets you try the guide in one.
-- Install with Apps2Samsung (**Custom WGT File**), Tizen Studio's command line, or the TizenBrew module. First run asks for the server address.
-- The server sends `Access-Control-Allow-Origin: *` on GET requests to `/api/` and `/live/` so a page served from the TV can read the guide and streams. Anything that changes data is unchanged.
-- Tested on one 2022 The Frame (Tizen 6.5). See [tizen/README.md](../tizen/README.md).
-
 ## Performance
 
 - **One shared encode per watched channel**, stopped about 25 seconds after the last viewer leaves.

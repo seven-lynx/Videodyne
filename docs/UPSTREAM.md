@@ -53,6 +53,8 @@ reason beside it.
 
 | 2026-11-24 | - | fork | Rename every `WBTV` reference to the fork's own name on all surfaces it owns: `x-videodyne-key` issued with `x-wbtv-key` still accepted, `videodyne_session` with the old cookie honoured, `tvg-id="videodyne.<id>"`, `VIDEODYNE_*` env knobs with the `WBTV_*` names still read, `/tmp/videodyne`, `videodyne.db` renamed on first boot with a fallback, the Android package, the Tizen widget, the desktop identity, the Docker image name and the four `WBTV` channel catch-alls | no | not-sent: a name is the author's. Ruling 9 (`PLAN.md` §6, 2026-11-24) accepts the costs - installed APKs are not upgraded in place, every tuner client must re-add its source, and `auth.js`, `iptvout.js`, `config.js` and `db.js` diverge from upstream permanently, so a later PR touching one of them has to be reconstructed rather than rebased | - |
 
+| 2026-11-25 | - | fork | Drop the Samsung (Tizen) TV client: `tizen/` deleted (nine files), its section out of `README.md` and `docs/FEATURES.md`, its rows out of `docs/CLIENTS.md`, the TizenBrew block out of `package.json` and its line out of `.dockerignore`; the `Access-Control-Allow-Origin: *` header stays, with its reason restated for an IPTV or web player rather than for one client | no | not-sent: the client exists in the author's tree, so removing it is a fork decision and the directory is simply absent here. The row above already records the widget's rename; this one records its removal | - |
+
 ## How a row is added
 
 1. The lane trailer in the commit is the claim: `brand`, `fork` or `upstream`.

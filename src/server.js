@@ -29,7 +29,7 @@ import { ttsStatus, sample, pruneCache, installVoice, speechQueue, VOICES } from
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const db = openDb(cfg.configDir);
 const app = Fastify({ logger: { level: 'warn' } });
-// The Samsung TV app is a page served from the TV itself (TizenBrew), so it reads the guide and the streams across origins: GET only
+// A page served from another origin (an IPTV or web player, a second host) reads the guide and the streams across origins: GET only
 app.addHook('onSend', async (req, reply, payload) => {
   if (req.method === 'GET' && (req.url.startsWith('/api/') || req.url.startsWith('/live/'))) reply.header('Access-Control-Allow-Origin', '*');
   return payload;

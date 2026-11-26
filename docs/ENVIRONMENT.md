@@ -93,7 +93,8 @@ ships no NVIDIA driver. `GET /api/hw` reports which encoder is active and why.
 The server binds `0.0.0.0` (`server.js:502`) and has no TLS. It is a LAN service: put it behind a
 reverse proxy for HTTPS, and see [API.md](API.md#authentication) for what a password protects. The one
 cross-origin exception is `Access-Control-Allow-Origin: *` on `GET /api/*` and `GET /live/*`
-(`server.js:37-40`), which exists for the Samsung client.
+(`server.js:37-40`), so a page served from another origin can read the guide and the streams. It is
+GET-only: nothing that changes data is opened up.
 
 ## Running it on a workstation
 
