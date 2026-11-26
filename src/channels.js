@@ -3,58 +3,197 @@ import { TALK } from './scanner.js';
 
 // ---- naming -------------------------------------------------------------
 
-const TV_GENRE_NAMES = {
-  horror: 'The Spooky Channel', comedy: 'Laugh Track', drama: 'Prime Drama', crime: 'Crime Scene',
-  mystery: 'Whodunnit TV', 'science fiction': 'Beyond 2000', 'sci-fi': 'Beyond 2000', 'sci-fi & fantasy': 'Beyond 2000',
-  fantasy: 'Realm TV', animation: 'Toon Town', family: 'Family Hour', children: 'Tiny Telly', kids: 'Tiny Telly',
-  documentary: 'The Learning Zone', reality: 'Reality Check', 'reality-tv': 'Reality Check', action: 'Action Replay',
-  adventure: 'Adventure Time', 'action & adventure': 'Action Replay', thriller: 'Edge of Seat TV', suspense: 'Edge of Seat TV',
-  romance: 'Heartstrings', war: 'Frontline', 'war & politics': 'Frontline', western: 'Frontier TV', history: 'Time Machine TV',
-  music: 'Pop Rewind', musical: 'Stage & Screen', sport: 'Sport Central', sports: 'Sport Central', news: 'Newsroom',
-  'talk show': 'Late Night Live', talk: 'Late Night Live', 'game show': 'Quiz Time', soap: 'Soap Central',
-  biography: 'Life Stories', 'stand-up': 'Comedy Store', 'stand up': 'Comedy Store', travel: 'Wanderlust TV',
-  food: 'Kitchen Table', 'special interest': 'The Odd Channel', 'mini-series': 'Limited Run', indie: 'Indie Airwaves',
-  anime: 'Anime Hour',
-};
-const MOVIE_GENRE_NAMES = {
-  horror: 'Fright Night Cinema', comedy: 'Laugh Out Loud Cinema', action: 'Action Max', adventure: 'Adventure Cinema',
-  drama: 'Silver Screen', 'science fiction': 'Cinema Galaxy', 'sci-fi': 'Cinema Galaxy', fantasy: 'Fantasy Premiere',
-  thriller: 'Midnight Thrillers', crime: 'Crime Cinema', mystery: 'Mystery Matinee', animation: 'Toon Cinema',
-  family: 'Family Film Night', documentary: 'Doc Cinema', romance: 'Date Night Movies', war: 'War Room Cinema',
-  western: 'Saturday Western', history: 'Epic Cinema', music: 'Music Movies', musical: 'Curtain Call Cinema',
-  biography: 'True Stories Cinema', 'tv movie': 'Made For TV',
-};
+// A network is a brand word and its channels lead with it: `Nightshade` (shows) and `Nightshade
+// Grindhouse` (films) are two channels of one network, and a horror viewer who learns 110 learns 310
+// by adding 200. The medium is never in the name - no `TV`, `Cinema`, `Movies` or `FM` - because the
+// number band and the guide's network chip are what say which is which.
+//
+// The roster is explicit and append-only: an entry names the channels of one network, the genres each
+// answers to, and the number block its channels are allocated from. Array order means nothing, and a
+// genre that is not on the roster invents no channel of its own: the item falls to the medium's
+// catch-all, because a genre nobody funded is not a brand.
+const NETWORKS = [
+  { id: 'nightshade', brand: 'Nightshade', tv: 110, film: 310, channels: [
+    { kind: 'tv', name: 'Nightshade', genres: ['horror'] },
+    { kind: 'movie', name: 'Nightshade Grindhouse', genres: ['horror'] },
+  ] },
+  { id: 'nailbiter', brand: 'Nailbiter', tv: 113, film: 313, channels: [
+    { kind: 'tv', name: 'Nailbiter', genres: ['thriller', 'suspense'] },
+    { kind: 'movie', name: 'Nailbiter After Dark', genres: ['thriller'] },
+  ] },
+  { id: 'chortle', brand: 'Chortle', tv: 116, film: 316, channels: [
+    { kind: 'tv', name: 'Chortle', genres: ['comedy'] },
+    { kind: 'tv', name: 'Chortle Open Mic', genres: ['stand-up', 'stand up'] },
+    { kind: 'movie', name: 'Chortle House', genres: ['comedy'] },
+  ] },
+  { id: 'longform', brand: 'Longform', tv: 119, film: 319, channels: [
+    { kind: 'tv', name: 'Longform', genres: ['drama'] },
+    { kind: 'tv', name: 'Longform Short Season', genres: ['mini-series'] },
+    { kind: 'movie', name: 'Longform Goldleaf', genres: ['drama'] },
+    { kind: 'movie', name: 'Longform Teleplay', genres: ['tv movie'] },
+  ] },
+  { id: 'herringbone', brand: 'Herringbone', tv: 122, film: 322, channels: [
+    { kind: 'tv', name: 'Herringbone', genres: ['mystery'] },
+    { kind: 'movie', name: 'Herringbone Cipher', genres: ['mystery'] },
+  ] },
+  { id: 'gavel', brand: 'Gavel', tv: 125, film: 325, channels: [
+    { kind: 'tv', name: 'Gavel', genres: ['crime'] },
+    { kind: 'movie', name: 'Gavel Lineup', genres: ['crime'] },
+  ] },
+  { id: 'slowburn', brand: 'Slowburn', tv: 128, film: 328, channels: [
+    { kind: 'tv', name: 'Slowburn', genres: ['romance'] },
+    { kind: 'tv', name: 'Slowburn Longstory', genres: ['soap'] },
+    { kind: 'movie', name: 'Slowburn Candlelight', genres: ['romance'] },
+  ] },
+  { id: 'warpwell', brand: 'Warpwell', tv: 131, film: 331, channels: [
+    { kind: 'tv', name: 'Warpwell', genres: ['science fiction', 'sci-fi', 'sci-fi & fantasy'] },
+    { kind: 'movie', name: 'Warpwell Deep Field', genres: ['science fiction', 'sci-fi'] },
+  ] },
+  { id: 'runegate', brand: 'Runegate', tv: 134, film: 334, channels: [
+    { kind: 'tv', name: 'Runegate', genres: ['fantasy'] },
+    { kind: 'movie', name: 'Runegate Mythos', genres: ['fantasy'] },
+  ] },
+  { id: 'hearthside', brand: 'Hearthside', tv: 137, film: 337, channels: [
+    { kind: 'tv', name: 'Hearthside', genres: ['family'] },
+    { kind: 'tv', name: 'Hearthside Kites', genres: ['children', 'kids'] },
+    { kind: 'movie', name: 'Hearthside Popcorn', genres: ['family'] },
+  ] },
+  { id: 'inkwell', brand: 'Inkwell', tv: 140, film: 340, channels: [
+    { kind: 'tv', name: 'Inkwell', genres: ['animation'] },
+    { kind: 'tv', name: 'Inkwell Cel Frame', genres: ['anime'] },
+    { kind: 'movie', name: 'Inkwell Flipbook', genres: ['animation'] },
+  ] },
+  { id: 'fieldwork', brand: 'Fieldwork', tv: 143, channels: [
+    { kind: 'tv', name: 'Fieldwork', genres: ['documentary'] },
+  ] },
+  { id: 'redline', brand: 'Redline', tv: 146, film: 346, channels: [
+    { kind: 'tv', name: 'Redline', genres: ['action', 'action & adventure'] },
+    { kind: 'movie', name: 'Redline Blast Radius', genres: ['action'] },
+  ] },
+  { id: 'trailhead', brand: 'Trailhead', tv: 149, film: 349, channels: [
+    { kind: 'tv', name: 'Trailhead', genres: ['adventure'] },
+    { kind: 'movie', name: 'Trailhead Compass Rose', genres: ['adventure'] },
+  ] },
+  { id: 'foxhole', brand: 'Foxhole', tv: 152, film: 352, channels: [
+    { kind: 'tv', name: 'Foxhole', genres: ['war', 'war & politics'] },
+    { kind: 'movie', name: 'Foxhole Beachhead', genres: ['war'] },
+  ] },
+  { id: 'dustline', brand: 'Dustline', tv: 155, channels: [
+    { kind: 'tv', name: 'Dustline', genres: ['western'] },
+  ] },
+  { id: 'recollect', brand: 'Recollect', tv: 158, film: 358, channels: [
+    { kind: 'tv', name: 'Recollect', genres: ['history'] },
+    { kind: 'movie', name: 'Recollect Monolith', genres: ['history'] },
+  ] },
+  { id: 'portrait', brand: 'Portrait', tv: 161, film: 361, channels: [
+    { kind: 'tv', name: 'Portrait', genres: ['biography'] },
+    { kind: 'movie', name: 'Portrait Testament', genres: ['biography'] },
+  ] },
+  { id: 'backbeat', brand: 'Backbeat', tv: 164, film: 364, channels: [
+    { kind: 'tv', name: 'Backbeat', genres: ['music'] },
+    { kind: 'movie', name: 'Backbeat Amplifier', genres: ['music'] },
+  ] },
+  { id: 'marquee', brand: 'Marquee', tv: 167, channels: [
+    { kind: 'tv', name: 'Marquee', genres: ['musical'] },
+  ] },
+  // Real networks are lumpy: these four film channels have no TV sibling, so they sit in the film band
+  // on their own with no partner 200 below to mirror.
+  { id: 'verity', brand: 'Verity', film: 370, channels: [
+    { kind: 'movie', name: 'Verity', genres: ['documentary'] },
+  ] },
+  { id: 'tumbleweed', brand: 'Tumbleweed', film: 373, channels: [
+    { kind: 'movie', name: 'Tumbleweed', genres: ['western'] },
+  ] },
+  { id: 'overture', brand: 'Overture', film: 376, channels: [
+    { kind: 'movie', name: 'Overture', genres: ['musical'] },
+  ] },
+  { id: 'guffaw', brand: 'Guffaw', film: 379, channels: [
+    { kind: 'movie', name: 'Guffaw', genres: ['comedy'] },
+  ] },
+  // One-brand TV channels: a genre with no film counterpart still belongs to a network of its own.
+  { id: 'buzzer', brand: 'Buzzer', tv: 170, channels: [{ kind: 'tv', name: 'Buzzer', genres: ['game show'] }] },
+  { id: 'after-hours', brand: 'After Hours', tv: 173, channels: [{ kind: 'tv', name: 'After Hours', genres: ['talk', 'talk show'] }] },
+  { id: 'unscripted', brand: 'Unscripted', tv: 176, channels: [{ kind: 'tv', name: 'Unscripted', genres: ['reality', 'reality-tv'] }] },
+  { id: 'skillet', brand: 'Skillet', tv: 179, channels: [{ kind: 'tv', name: 'Skillet', genres: ['food'] }] },
+  { id: 'passages', brand: 'Passages', tv: 182, channels: [{ kind: 'tv', name: 'Passages', genres: ['travel'] }] },
+  { id: 'curio', brand: 'Curio', tv: 185, channels: [{ kind: 'tv', name: 'Curio', genres: ['special interest'] }] },
+  { id: 'extra-time', brand: 'Extra Time', tv: 188, channels: [{ kind: 'tv', name: 'Extra Time', genres: ['sport', 'sports'] }] },
+  { id: 'bulletin', brand: 'Bulletin', tv: 191, channels: [{ kind: 'tv', name: 'Bulletin', genres: ['news'] }] },
+  { id: 'small-print', brand: 'Small Print', tv: 194, channels: [{ kind: 'tv', name: 'Small Print', genres: ['indie'] }] },
+];
+
+/** `kind\0genre` -> the channel that genre airs on, built once at import so a name is spelled in one place. */
+const GENRE_CHANNELS = new Map();
+for (const n of NETWORKS) for (const c of n.channels) for (const g of c.genres) GENRE_CHANNELS.set(`${c.kind}\u0000${g}`, { network: n.id, name: c.name });
+
 const title = (s) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 
+/** The channel a genre airs on, or null when the roster has no row for it - the caller then falls back to the catch-all. */
 function genreChannelName(kind, genre) {
-  const map = kind === 'movie' ? MOVIE_GENRE_NAMES : TV_GENRE_NAMES;
-  return map[genre.toLowerCase()] || `${title(genre)} ${kind === 'movie' ? 'Movies' : 'TV'}`;
+  return GENRE_CHANNELS.get(`${kind}\u0000${genre.toLowerCase().trim()}`) || null;
 }
-const MUSIC_NAMES = [
-  ['hip', 'Urban Beats'], ['rap', 'Urban Beats'], ['r&b', 'Smooth Grooves'], ['soul', 'Smooth Grooves'], ['funk', 'Smooth Grooves'],
-  ['dance', 'Dance Floor'], ['electro', 'Dance Floor'], ['house', 'Dance Floor'], ['techno', 'Dance Floor'], ['trance', 'Dance Floor'],
-  ['metal', 'Metal Mayhem'], ['punk', 'Punk Rocks'], ['indie', 'Alt Tracks'], ['alternative', 'Alt Tracks'], ['rock', 'Rock Box'],
-  ['pop', 'Pop Videos'], ['country', 'Country Roads'], ['jazz', 'Jazz Lounge'], ['blues', 'Blues Cafe'], ['classical', 'Classical Hall'],
-  ['reggae', 'Island Vibes'], ['folk', 'Folk Fire'], ['soundtrack', 'Screen Scores'], ['latin', 'Latin Heat'], ['k-pop', 'K-Pop Zone'],
+
+// A music station is its video channel plus a dial position, the way a real one is known by its
+// frequency: `Blocks` and `Blocks 92.1` are one network, and the numeral stands where a generic "FM"
+// used to. `key` is the station's identity, carried over from before the rename so that a rebuild
+// renames the channel instead of recreating it and handing it a new number.
+const MUSIC_FAMILIES = [
+  { id: 'blocks', key: 'urban beats', brand: 'Blocks', dial: '92.1', genres: ['hip', 'rap'] },
+  { id: 'velour', key: 'smooth grooves', brand: 'Velour', dial: '94.7', genres: ['r&b', 'soul', 'funk'] },
+  { id: 'strobe', key: 'dance floor', brand: 'Strobe', dial: '88.3', genres: ['dance', 'electro', 'house', 'techno', 'trance'] },
+  { id: 'anvil', key: 'metal mayhem', brand: 'Anvil', dial: '96.2', genres: ['metal'] },
+  { id: 'pin', key: 'punk rocks', brand: 'Pin', dial: '90.9', genres: ['punk'] },
+  { id: 'bedsit', key: 'alt tracks', brand: 'Bedsit', dial: '91.7', genres: ['indie', 'alternative'] },
+  { id: 'watt', key: 'rock box', brand: 'Watt', dial: '98.4', genres: ['rock'] },
+  { id: 'gloss', key: 'pop videos', brand: 'Gloss', dial: '100.1', genres: ['pop'] },
+  { id: 'dusty', key: 'country roads', brand: 'Dusty', dial: '87.9', genres: ['country'] },
+  { id: 'cadence', key: 'jazz lounge', brand: 'Cadence', dial: '103.2', genres: ['jazz'] },
+  { id: 'smokestack', key: 'blues cafe', brand: 'Smokestack', dial: '89.5', genres: ['blues'] },
+  { id: 'kindling', key: 'classical hall', brand: 'Kindling', dial: '90.3', genres: ['classical'] },
+  { id: 'tidepool', key: 'island vibes', brand: 'Tidepool', dial: '95.8', genres: ['reggae'] },
+  { id: 'moonshine', key: 'folk fire', brand: 'Moonshine', dial: '93.6', genres: ['folk'] },
+  { id: 'score', key: 'screen scores', brand: 'Score', dial: '97.5', genres: ['soundtrack'] },
+  { id: 'caliente', key: 'latin heat', brand: 'Caliente', dial: '99.1', genres: ['latin'] },
+  { id: 'hallyu', key: 'k-pop zone', brand: 'Hallyu', dial: '101.8', genres: ['k-pop'] },
 ];
-const RADIO_NAMES = {
-  'Urban Beats': 'Urban FM', 'Smooth Grooves': 'Smooth FM', 'Dance Floor': 'Dance FM', 'Metal Mayhem': 'Metal FM', 'Punk Rocks': 'Punk FM',
-  'Alt Tracks': 'Alt FM', 'Rock Box': 'Rock FM', 'Pop Videos': 'Pop FM', 'Country Roads': 'Country FM', 'Jazz Lounge': 'Jazz FM',
-  'Blues Cafe': 'Blues FM', 'Classical Hall': 'Classical FM', 'Island Vibes': 'Reggae FM', 'Folk Fire': 'Folk FM', 'Screen Scores': 'Soundtrack FM',
-  'Latin Heat': 'Latin FM', 'K-Pop Zone': 'K-Pop FM',
-};
+
 function musicGenreName(kind, genre) {
   const g = genre.toLowerCase();
-  const hit = MUSIC_NAMES.find(([k]) => g === k || g.includes(k));
-  if (kind === 'music') return hit ? hit[1] : `${title(genre)} Music TV`;
-  return hit ? RADIO_NAMES[hit[1]] : `${title(genre)} FM`;
+  const hit = MUSIC_FAMILIES.find((f) => f.genres.some((k) => g === k || g.includes(k)));
+  if (!hit) return null;
+  return { network: hit.id, name: kind === 'music' ? hit.brand : `${hit.brand} ${hit.dial}` };
 }
+
+// An era is its own identity, the way a classics channel is not "the old-film network of a brand".
+// A null is a medium that has no channel for that era - a 1960s music video - so the item keeps the
+// genre station it is already on instead of being filed under a name nobody chose.
+const ERAS = [
+  { from: 0, id: 'nitrate', movie: 'Nitrate', music: 'Shellac', radio: 'Wireless' },
+  { from: 1960, id: 'pop-art', movie: 'Pop Art', music: null, radio: null },
+  { from: 1970, id: 'grain', movie: 'Grain', music: 'Glitter', radio: 'AM Gold' },
+  { from: 1980, id: 'neon', movie: 'Neon', music: 'VHS', radio: 'Cassingle' },
+  { from: 1990, id: 'rental', movie: 'Rental', music: 'Dial-Up', radio: 'Minidisc' },
+  { from: 2000, id: 'millennium', movie: 'Millennium', music: 'Ringtone', radio: 'MP3' },
+  { from: 2010, id: 'widescreen', movie: 'Widescreen', music: 'Feed', radio: 'Streamline' },
+  { from: 2020, id: 'now', movie: 'Now', music: 'Loop', radio: 'Airwave' },
+];
+/** The era a release belongs to, or null when its medium has no channel for that era. */
 function decadeName(d, kind = 'movie') {
-  if (kind === 'music') return d < 1970 ? 'Golden Oldies TV' : `${d}s Music TV`;
-  if (kind === 'radio') return d < 1970 ? 'Golden Oldies FM' : `${d}s Radio`;
-  if (d < 1960) return 'Golden Age Cinema';
-  return `${d}s Cinema`;
+  let row = ERAS[0];
+  for (const e of ERAS) if (d >= e.from) row = e;
+  const name = kind === 'music' || kind === 'radio' ? row[kind] : row.movie;
+  return name ? { network: row.id, name } : null;
 }
+
+// Where an item lands when nothing on the roster reached its threshold: one brand per medium, so an
+// unplaceable film is still watchable and never ends up carrying a product name.
+const CATCH_ALL = {
+  tv: { network: 'the-spare', name: 'The Spare' },
+  movie: { network: 'backlot', name: 'Backlot' },
+  music: { network: 'the-b-side', name: 'The B-Side' },
+  radio: { network: 'frequency', name: 'Frequency' },
+};
+
 
 const STUDIO_ALIASES = [
   [/^bbc[\s-]*(1|one)$/i, 'BBC One'], [/^bbc[\s-]*(2|two)$/i, 'BBC Two'], [/^bbc[\s-]*(3|three)$/i, 'BBC Three'],
@@ -68,11 +207,11 @@ function normStudio(raw) {
   return { norm: norm || s.toLowerCase(), name: s };
 }
 const normGenre = (g) => g.toLowerCase().trim();
-/** Sub-genres fold into their family (the same families that give the stations their names); anything unrecognised keeps its own name. */
+/** Sub-genres fold into their station, so Indie Rock, Hard Rock and Rock are one station; anything unrecognised keeps its own name. */
 function radioFamily(g) {
   const l = g.toLowerCase();
-  const hit = MUSIC_NAMES.find(([k]) => l === k || l.includes(k));
-  return hit ? hit[1].toLowerCase() : normGenre(g);
+  const hit = MUSIC_FAMILIES.find((f) => f.genres.some((k) => l === k || l.includes(k)));
+  return hit ? hit.key : normGenre(g);
 }
 const TAGS = /\s*[\(\[-]\s*(\d{4}\s+)?(digital\s+)?(re-?master(ed)?|mono|stereo|deluxe|bonus track|single version|album version|radio edit)[^)\]]*[\)\]]?\s*$/i;
 /** artist + title with the "(2011 Remaster)" style tags removed, so one song on many releases gets one key. A live version or a remix stays distinct. */
@@ -171,9 +310,9 @@ export function inferChannels(db) {
     }
   }
 
-  const assign = new Map(); // channel key -> { kind, name, ids:Set }
-  const put = (key, kind, name, ids) => {
-    const c = assign.get(key) || { kind, name, ids: new Set() };
+  const assign = new Map(); // channel key -> { kind, name, network, ids:Set }
+  const put = (key, kind, name, ids, network = null) => {
+    const c = assign.get(key) || { kind, name, network, ids: new Set() };
     if (c.kind !== kind && key.startsWith('group:') && !['music', 'clips'].includes(c.kind) && !['music', 'clips'].includes(kind)) c.kind = 'tv'; // films and shows in one group: scheduled as TV
     for (const id of ids) c.ids.add(id);
     assign.set(key, c);
@@ -199,23 +338,27 @@ export function inferChannels(db) {
       }
       if (st.tvGenreChannelsForAll || !placed) {
         for (const [k, name] of u.genres) {
-          if ((secs.tv.genre.get(k) || 0) >= minSec) { put(`tv:genre:${k}`, 'tv', genreChannelName('tv', name), u.ids); placed = true; }
+          const ch = genreChannelName('tv', name);
+          if (ch && (secs.tv.genre.get(k) || 0) >= minSec) { put(`tv:genre:${k}`, 'tv', ch.name, u.ids, ch.network); placed = true; }
         }
       }
-      if (!placed) put('tv:misc', 'tv', 'WBTV Variety', u.ids);
+      if (!placed) put('tv:misc', 'tv', CATCH_ALL.tv.name, u.ids, CATCH_ALL.tv.network);
     } else if (u.kind === 'music' || u.kind === 'radio') {
       for (const [k, name] of u.genres) {
-        if ((secs[u.kind].genre.get(k) || 0) >= minSec) { put(`${u.kind}:genre:${k}`, u.kind, musicGenreName(u.kind, name), u.ids); placed = true; }
+        const ch = musicGenreName(u.kind, name);
+        if (ch && (secs[u.kind].genre.get(k) || 0) >= minSec) { put(`${u.kind}:genre:${k}`, u.kind, ch.name, u.ids, ch.network); placed = true; }
       }
       if (u.year) {
         const d = Math.floor(u.year / 10) * 10;
-        const key = d < 1970 ? `${u.kind}:decade:oldies` : `${u.kind}:decade:${d}`;
-        if ((secs[u.kind].decade.get(d) || 0) >= minSec || d < 1970) { put(key, u.kind, decadeName(d, u.kind), u.ids); placed = true; }
+        const key = d < 1960 ? `${u.kind}:decade:oldies` : `${u.kind}:decade:${d}`;
+        const era = decadeName(d, u.kind);
+        if (era && ((secs[u.kind].decade.get(d) || 0) >= minSec || d < 1960)) { put(key, u.kind, era.name, u.ids, era.network); placed = true; }
       }
-      if (!placed) put(`${u.kind}:misc`, u.kind, u.kind === 'music' ? 'WBTV Music' : 'WBTV Radio', u.ids);
+      if (!placed) put(`${u.kind}:misc`, u.kind, CATCH_ALL[u.kind].name, u.ids, CATCH_ALL[u.kind].network);
     } else {
       for (const [k, name] of u.genres) {
-        if ((secs.movie.genre.get(k) || 0) >= minSec) { put(`movie:genre:${k}`, 'movie', genreChannelName('movie', name), u.ids); placed = true; }
+        const ch = genreChannelName('movie', name);
+        if (ch && (secs.movie.genre.get(k) || 0) >= minSec) { put(`movie:genre:${k}`, 'movie', ch.name, u.ids, ch.network); placed = true; }
       }
       if (st.movieStudioChannels) {
         for (const [k, n] of u.studios) {
@@ -225,9 +368,10 @@ export function inferChannels(db) {
       if (st.movieDecadeChannels && u.year) {
         const d = Math.floor(u.year / 10) * 10;
         const key = d < 1960 ? 'movie:decade:classic' : `movie:decade:${d}`;
-        if ((secs.movie.decade.get(d) || 0) >= minSec || d < 1960) { put(key, 'movie', decadeName(d), u.ids); placed = true; }
+        const era = decadeName(d, 'movie');
+        if (era && ((secs.movie.decade.get(d) || 0) >= minSec || d < 1960)) { put(key, 'movie', era.name, u.ids, era.network); placed = true; }
       }
-      if (!placed) put('movie:misc', 'movie', 'WBTV Cinema', u.ids);
+      if (!placed) put('movie:misc', 'movie', CATCH_ALL.movie.name, u.ids, CATCH_ALL.movie.network);
     }
   }
 
@@ -256,8 +400,8 @@ export function inferChannels(db) {
     let nextNum = Math.max(10, ...[...taken].filter((n) => n < 300), 0) + 1;
     const BASE = { music: 400, live: 600, radio: 800 };
     const freeFrom = (n) => { while (taken.has(n)) n++; return n; };
-    const ins = db.prepare('INSERT INTO channels(key,kind,auto_name,number,enabled,item_count) VALUES(?,?,?,?,1,0)');
-    const upd = db.prepare('UPDATE channels SET auto_name=?, item_count=?, kind=?, grp=? WHERE id=?'); // kind too: a group of films and shows is TV, whatever its first library was
+    const ins = db.prepare('INSERT INTO channels(key,kind,auto_name,number,enabled,item_count,network) VALUES(?,?,?,?,1,0,?)');
+    const upd = db.prepare('UPDATE channels SET auto_name=?, item_count=?, kind=?, grp=?, network=? WHERE id=?'); // kind too: a group of films and shows is TV, whatever its first library was
     db.exec('DELETE FROM channel_items');
     const link = db.prepare('INSERT OR IGNORE INTO channel_items(channel_id,item_id) VALUES(?,?)');
 
@@ -270,14 +414,14 @@ export function inferChannels(db) {
         for (const [re, n] of PREFERRED_NUMBERS) if (re.test(c.name) && !taken.has(n)) num = n;
         if (num == null) { if (BASE[c.kind]) num = freeFrom(BASE[c.kind]); else { nextNum = freeFrom(nextNum); num = nextNum++; } }
         taken.add(num);
-        ch = { id: Number(ins.run(key, c.kind, c.name, num).lastInsertRowid) };
+        ch = { id: Number(ins.run(key, c.kind, c.name, num, c.network).lastInsertRowid) };
       }
       const gc = new Map(); for (const id of c.ids) { const g = idGrp.get(id); if (g) gc.set(g, (gc.get(g) || 0) + 1); }
       const top = [...gc.entries()].sort((a, b) => b[1] - a[1])[0]; // the group most of its programmes belong to
-      upd.run(c.name, c.ids.size, c.kind, top && top[1] * 2 >= c.ids.size ? top[0] : null, ch.id);
+      upd.run(c.name, c.ids.size, c.kind, top && top[1] * 2 >= c.ids.size ? top[0] : null, c.network, ch.id);
       for (const id of c.ids) link.run(ch.id, id);
     }
-    for (const [key, ch] of existing) if (!assign.has(key) && !key.startsWith('live:')) upd.run(ch.auto_name, 0, ch.kind, null, ch.id); // emptied channels (live ones: syncLiveChannels)
+    for (const [key, ch] of existing) if (!assign.has(key) && !key.startsWith('live:')) upd.run(ch.auto_name, 0, ch.kind, null, ch.network, ch.id); // emptied channels (live ones: syncLiveChannels)
   });
 }
 
