@@ -10,7 +10,6 @@
   <a href="https://github.com/WB2024/WBTV/actions/workflows/docker.yml"><img src="https://img.shields.io/github/actions/workflow/status/WB2024/WBTV/docker.yml?style=flat-square&label=build" alt="Build"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/WB2024/WBTV?style=flat-square" alt="MIT licence"></a>
   <a href="https://github.com/WB2024/WBTV/stargazers"><img src="https://img.shields.io/github/stars/WB2024/WBTV?style=flat-square&color=ffd400" alt="Stars"></a>
-  <a href="https://deepwiki.com/seven-lynx/Videodyne"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 <p align="center">
@@ -444,6 +443,10 @@ If something misbehaves, please [open an issue](https://github.com/WB2024/WBTV/i
 **Where do the ads come from?** From you: YouTube / archive.org / direct links (downloaded once with yt-dlp) or local folders. WBTV ships with none.
 
 **Does the voice use an AI service?** No. Announcements are generated offline on your own machine with [Piper](https://github.com/rhasspy/piper). Nothing leaves your network.
+
+**Can I ask questions about the code instead of reading it?** Yes. [DeepWiki](https://deepwiki.com/seven-lynx/Videodyne) indexes this repository and answers questions such as how channels are inferred or where a configuration setting is read, with links back to the files it used.
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/seven-lynx/Videodyne)
 
 ## Troubleshooting
 
