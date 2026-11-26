@@ -10,8 +10,7 @@ import { fileURLToPath } from 'node:url';
 // reads `public/` or the prose in `README.md` - a string that can go stale silently gets stale.
 //
 // Some old-name literals are deliberate and belong to another segment: the access-key header and the
-// session cookie still accepted after the rename (B5), the widget artefact (B8), the `/opt/wbtv` mount in
-// `tools/README.md`, and
+// session cookie still accepted after the rename (B5), the `/opt/wbtv` mount in `tools/README.md`, and
 // upstream's repository and published image, which have to keep resolving. The environment prefix,
 // the container name and the tmpfs path are deliberately *not* among them any more: they were renamed,
 // and the last two tests here are what keeps them renamed and keeps the pair in step.
@@ -25,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
-const OWNED = /WB2024\/WBTV|wb20244\/wbtv|WBTV-Tizen\.wgt|x-wbtv-key|wbtv_session|\/opt\/wbtv|wbtv-theme|wbtv-\$\{key\}/g;
+const OWNED = /WB2024\/WBTV|wb20244\/wbtv|x-wbtv-key|wbtv_session|\/opt\/wbtv|wbtv-theme|wbtv-\$\{key\}/g;
 
 const SURFACES = [
   'public/index.html',

@@ -8,7 +8,6 @@ config
 # not needed inside the image (the Dockerfile copies only package files, src, public and tools): keeps the build context small
 Images
 android
-tizen
 docs
 test
 *.md

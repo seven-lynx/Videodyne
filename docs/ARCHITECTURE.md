@@ -117,7 +117,7 @@ growing another responsibility.
 | **Channels** | `channels.js`, `logos.js` | rows in `channels` and `channel_items` |
 | **Schedule** | `scheduler.js`, `daypart.js`, `promo.js`, `speech.js`, `tts.js` | rows in `programmes`, `blocks`, `promos` |
 | **Broadcast** | `broadcaster.js`, `streams.js`, `lyrics.js`, `hw.js`, `ads.js`, `archive.js` | an HLS stream on disk, one per watched channel |
-| **Clients** | `public/`, `android/`, `tizen/`, `desktop/` | what a viewer sees |
+| **Clients** | `public/`, `android/`, `desktop/` | what a viewer sees |
 
 `stillcheck.js` sits beside broadcast but is only used by `imvdb.js`: it answers "is this download a
 real video", before anything is scheduled.
