@@ -55,6 +55,8 @@ reason beside it.
 
 | 2026-11-25 | - | fork | Drop the Samsung (Tizen) TV client: `tizen/` deleted (nine files), its section out of `README.md` and `docs/FEATURES.md`, its rows out of `docs/CLIENTS.md`, the TizenBrew block out of `package.json` and its line out of `.dockerignore`; the `Access-Control-Allow-Origin: *` header stays, with its reason restated for an IPTV or web player rather than for one client | no | not-sent: the client exists in the author's tree, so removing it is a fork decision and the directory is simply absent here. The row above already records the widget's rename; this one records its removal | - |
 
+| 2026-11-25 | `beaf75c` | upstream | Settle `motionOf` once: a spawn that fails emits `error` and then `close`, so the close handler used to start a sample for a child that never ran - spawning `ffmpeg` and arming a second 60 s kill timer after the call had already rejected, which wasted a child on an install with a wrong `FFMPEG_PATH` and left an orphan timer holding the event loop; a `failed` flag on the probe and a `settled` flag in `sample()` close that path, and a test counts the timers a failed spawn arms. The patch sits on `454b31e`, which is still a candidate, so it is reconstructed against pristine `main` together with that row instead of applying on its own | yes | candidate | #55 |
+
 ## How a row is added
 
 1. The lane trailer in the commit is the claim: `brand`, `fork` or `upstream`.
