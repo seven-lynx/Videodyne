@@ -76,6 +76,33 @@ test('motionOf takes an injected ffprobe and clears every kill timer it arms', a
   assert.equal(cleared, 2, 'both are cleared when their child closes, so neither holds the process');
 });
 
+// a spawn that fails emits 'error' and then 'close', and the close used to start a sample for a
+// child that never ran: the ffmpeg it spawned armed a second 60 s kill timer after the call had
+// already rejected, and that orphan held the event loop on an install with a wrong FFMPEG_PATH.
+test('a spawn that fails rejects without starting the sample', async () => {
+  const armed = new Set();
+  const realSet = globalThis.setTimeout, realClear = globalThis.clearTimeout;
+  let created = 0;
+  globalThis.setTimeout = (fn, ms, ...rest) => {
+    const t = realSet(fn, ms, ...rest);
+    if (ms === 60000) { created++; armed.add(t); }
+    return t;
+  };
+  globalThis.clearTimeout = (t) => { armed.delete(t); return realClear(t); };
+  try {
+    await assert.rejects(
+      motionOf(path.join(os.tmpdir(), 'wbtv-still-enoent.mp4'), { ffmpeg: 'videodyne-no-ffmpeg', ffprobe: 'videodyne-no-ffprobe', timeoutMs: 60000 }),
+      { code: 'ENOENT' },
+    );
+    await new Promise((r) => realSet(r, 100)); // let the 'close' that follows 'error' arrive
+  } finally {
+    globalThis.setTimeout = realSet;
+    globalThis.clearTimeout = realClear;
+  }
+  assert.equal(created, 1, 'one kill timer for the probe; a probe that never ran starts no sample');
+  assert.equal(armed.size, 0, 'and the probe timer is cleared when its spawn fails');
+});
+
 test('a probe that has not answered by the deadline rejects instead of hanging', async () => {
   await assert.rejects(
     motionOf(path.join(os.tmpdir(), 'wbtv-still-wedged.mp4'), { ffprobe: process.execPath, timeoutMs: 0 }),

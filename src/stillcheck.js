@@ -30,16 +30,18 @@ export function motionOf(file, { ffmpeg = cfg.ffmpeg, ffprobe = cfg.ffprobe, sta
       const chunks = [];
       p.stdout.on('data', (d) => chunks.push(d));
       const timer = setTimeout(() => p.kill('SIGKILL'), timeoutMs);
-      p.on('error', (e) => { clearTimeout(timer); rej(e); });
-      p.on('close', () => { clearTimeout(timer); res(Buffer.concat(chunks)); });
+      let settled = false; // a spawn that fails emits 'error' and then 'close': settle once, not twice
+      p.on('error', (e) => { settled = true; clearTimeout(timer); rej(e); });
+      p.on('close', () => { clearTimeout(timer); if (!settled) res(Buffer.concat(chunks)); });
     });
     const probe = spawn(ffprobe, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file], { stdio: ['ignore', 'pipe', 'ignore'] });
-    let out = '', timedOut = false;
+    let out = '', timedOut = false, failed = false;
     const timer = setTimeout(() => { timedOut = true; probe.kill('SIGKILL'); }, timeoutMs);
     probe.stdout.on('data', (d) => (out += d));
-    probe.on('error', (e) => { clearTimeout(timer); reject(e); });
+    probe.on('error', (e) => { failed = true; clearTimeout(timer); reject(e); });
     probe.on('close', async () => {
       clearTimeout(timer);
+      if (failed) return; // 'close' follows 'error' on a failed spawn: the call has settled, so start no sample for a child that never ran
       if (timedOut) return reject(new Error(`ffprobe did not answer within ${timeoutMs} ms`)); // a wedged probe must not hang the download worker for ever
       try {
         const dur = parseFloat(out) || 0;
