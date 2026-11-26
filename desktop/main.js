@@ -1,4 +1,4 @@
-// WBTV desktop client: a window around the server's own web UI. The server address is remembered;
+// Videodyne desktop client: a window around the server's own web UI. The server address is remembered;
 // Ctrl+Shift+S changes it, F11 toggles fullscreen.
 const { app, BrowserWindow, Menu, ipcMain, shell, session } = require('electron');
 const fs = require('node:fs');
@@ -8,6 +8,17 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 const file = () => path.join(app.getPath('userData'), 'settings.json');
+// Electron names the profile directory after `productName`, so the rename moved it to a new directory
+// and took the remembered address with it. Carry the old file over once, on the first start after the
+// upgrade, and never write to it again - a downgrade still finds its own copy untouched.
+const oldFile = () => path.join(app.getPath('appData'), 'WBTV', 'settings.json');
+function carryOver() {
+  try {
+    if (fs.existsSync(file()) || !fs.existsSync(oldFile())) return;
+    fs.mkdirSync(path.dirname(file()), { recursive: true });
+    fs.copyFileSync(oldFile(), file());
+  } catch { /* unreadable profile: the user types the address once, nothing is lost */ }
+}
 const load = () => { try { return JSON.parse(fs.readFileSync(file(), 'utf8')); } catch { return {}; } };
 const save = (o) => { try { fs.writeFileSync(file(), JSON.stringify(o)); } catch { /* read-only profile: the address is just not remembered */ } };
 
@@ -23,9 +34,11 @@ let win;
 const showConnect = () => win.loadFile(path.join(__dirname, 'connect.html'));
 
 async function go(s) {
-  // the server accepts the access key as an x-wbtv-key header, so every request (page, API, streams) carries it
+  // the server reads the access key from `x-videodyne-key`, with the pre-rename `x-wbtv-key` still
+  // accepted; a shell pointed at a server older than the rename only understands the second, so every
+  // request (page, API, streams) carries both
   session.defaultSession.webRequest.onBeforeSendHeaders({ urls: [s.origin + '/*'] }, (d, cb) => {
-    if (s.key) d.requestHeaders['x-wbtv-key'] = s.key;
+    if (s.key) { d.requestHeaders['x-videodyne-key'] = s.key; d.requestHeaders['x-wbtv-key'] = s.key; }
     cb({ requestHeaders: d.requestHeaders });
   });
   await win.loadURL(s.origin + '/');
@@ -34,7 +47,7 @@ async function go(s) {
 function create() {
   const st = load();
   win = new BrowserWindow({
-    width: st.w || 1280, height: st.h || 760, backgroundColor: '#0b0d12', title: 'WBTV', autoHideMenuBar: true,
+    width: st.w || 1280, height: st.h || 760, backgroundColor: '#0b0d12', title: 'Videodyne', autoHideMenuBar: true,
     icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
@@ -64,7 +77,7 @@ ipcMain.handle('server:set', async (_e, address) => {
   const s = parse(address);
   if (!s) return { error: 'That does not look like an address.' };
   try {
-    const r = await fetch(s.origin + '/api/status', { signal: AbortSignal.timeout(6000), headers: s.key ? { 'x-wbtv-key': s.key } : {} });
+    const r = await fetch(s.origin + '/api/status', { signal: AbortSignal.timeout(6000), headers: s.key ? { 'x-videodyne-key': s.key, 'x-wbtv-key': s.key } : {} });
     if (r.status !== 401 && !r.ok) return { error: `The server answered ${r.status}.` };
   } catch { return { error: 'Could not reach that address.' }; }
   save({ ...load(), server: String(address).trim() });
@@ -74,8 +87,9 @@ ipcMain.handle('server:set', async (_e, address) => {
 
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
 app.whenReady().then(() => {
+  carryOver();
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'WBTV', submenu: [
+    { label: 'Videodyne', submenu: [
       { label: 'Change server…', accelerator: 'CmdOrCtrl+Shift+S', click: showConnect },
       { label: 'Reload', accelerator: 'CmdOrCtrl+R', click: () => win.webContents.reload() },
       { label: 'Fullscreen', accelerator: 'F11', click: () => win.setFullScreen(!win.isFullScreen()) },

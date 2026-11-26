@@ -1,11 +1,11 @@
 {
-  "name": "wbtv-desktop",
+  "name": "videodyne-desktop",
   "version": "0.1.0",
-  "description": "WBTV desktop client: your WBTV server's channels in a window",
+  "description": "Videodyne desktop client: your Videodyne server's channels in a window",
   "main": "main.js",
   "private": true,
-  "homepage": "https://github.com/WB2024/WBTV",
-  "author": "WB2024",
+  "homepage": "https://github.com/seven-lynx/Videodyne",
+  "author": "seven-lynx",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -17,13 +17,13 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.wb2024.wbtv",
-    "productName": "WBTV",
+    "appId": "com.videodyne.desktop",
+    "productName": "Videodyne",
     "icon": "build/icon.png",
     "files": ["main.js", "preload.js", "connect.html", "package.json"],
-    "artifactName": "WBTV-Desktop-${version}-${os}.${ext}",
+    "artifactName": "Videodyne-Desktop-${version}-${os}.${ext}",
     "win": { "target": ["portable", "nsis"] },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
-    "linux": { "target": ["AppImage", "deb"], "category": "AudioVideo", "maintainer": "WB2024" }
+    "linux": { "target": ["AppImage", "deb"], "category": "AudioVideo", "maintainer": "seven-lynx" }
   }
 }
