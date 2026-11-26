@@ -447,6 +447,10 @@ If something misbehaves, please [open an issue](https://github.com/WB2024/WBTV/i
 
 **Does the voice use an AI service?** No. Announcements are generated offline on your own machine with [Piper](https://github.com/rhasspy/piper). Nothing leaves your network.
 
+**Can I ask questions about the code instead of reading it?** Yes. [DeepWiki](https://deepwiki.com/seven-lynx/Videodyne) indexes this repository and answers questions such as how channels are inferred or where a configuration setting is read, with links back to the files it used.
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/seven-lynx/Videodyne)
+
 ## Troubleshooting
 
 | Problem | Try |
