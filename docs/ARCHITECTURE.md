@@ -126,7 +126,7 @@ real video", before anything is scheduled.
 
 | Step | Where | What it does |
 |---|---|---|
-| 1 | `server.js:35` → `db.js:85-92` | opens or creates `wbtv.db`, sets `WAL`, `foreign_keys`, `busy_timeout`, runs `SCHEMA`, then `migrate()` |
+| 1 | `server.js:30` → `db.js:88-108` | moves an older database file to `videodyne.db` and opens or creates it, sets `WAL`, `foreign_keys`, `busy_timeout`, runs `SCHEMA`, then `migrate()` |
 | 2 | `server.js:37-52` | Fastify instance, the CORS and gzip `onSend` hooks, the image-body parser |
 | 3 | `server.js:45` | `initAuth` — the gate, then the six `/api/auth/*` routes |
 | 4 | `server.js:103-486` | the library, channel, schedule, settings, ad, promo and live routes |

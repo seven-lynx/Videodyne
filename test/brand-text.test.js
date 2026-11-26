@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 // reads `public/` or the prose in `README.md` - a string that can go stale silently gets stale.
 //
 // Some old-name literals are deliberate and belong to another segment: the access-key header and the
-// database filename (B5), the widget artefact (B8), the `/opt/wbtv` mount in `tools/README.md`, and
+// session cookie still accepted after the rename (B5), the widget artefact (B8), the `/opt/wbtv` mount in
+// `tools/README.md`, and
 // upstream's repository and published image, which have to keep resolving. The environment prefix,
 // the container name and the tmpfs path are deliberately *not* among them any more: they were renamed,
 // and the last two tests here are what keeps them renamed and keeps the pair in step.
@@ -24,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
-const OWNED = /WB2024\/WBTV|wb20244\/wbtv|WBTV-Tizen\.wgt|x-wbtv-key|wbtv\.db|\/opt\/wbtv|wbtv-theme|wbtv-\$\{key\}/g;
+const OWNED = /WB2024\/WBTV|wb20244\/wbtv|WBTV-Tizen\.wgt|x-wbtv-key|wbtv_session|\/opt\/wbtv|wbtv-theme|wbtv-\$\{key\}/g;
 
 const SURFACES = [
   'public/index.html',
@@ -79,6 +80,16 @@ test('the environment prefix, the container name and the tmpfs path are the new 
   const stale = surfaces.filter((f) => STALE.test(read(f)));
   assert.deepEqual(stale, [], 'surfaces still carrying a pre-rename name');
   assert.match(read('docker-compose.yml'), /container_name: videodyne/, 'the container is named after the product');
+});
+
+// The database file is the one old name that must not linger in a document: `openDb` moves a pre-rename
+// file in place on the first boot, so after B5 nobody types the old name again. `docs/OPERATIONS.md` is
+// not on this list because its upgrade note names the old file deliberately, and `docs/UPSTREAM.md`
+// records the rename itself.
+test('the documents that describe the database name the new file', () => {
+  const docs = ['docs/ARCHITECTURE.md', 'docs/DATA-MODEL.md', 'tools/README.md'];
+  const stale = docs.filter((f) => /wbtv\.db/.test(read(f)));
+  assert.deepEqual(stale, [], 'documents still naming the pre-rename database file');
 });
 
 test('every knob keeps the old name behind the new one, and the container agrees with the default', () => {

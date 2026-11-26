@@ -60,8 +60,8 @@ source URL, and the modules that log a path already do.
 
 ## 4. Backup and restore
 
-Everything that matters is in the config volume: `wbtv.db`, `covers/`, `ads/`, `logos/`, `voices/`,
-`tts/`. Copy the directory with the container stopped, or copy `wbtv.db` **with** its `-wal` and
+Everything that matters is in the config volume: `videodyne.db`, `covers/`, `ads/`, `logos/`, `voices/`,
+`tts/`. Copy the directory with the container stopped, or copy `videodyne.db` **with** its `-wal` and
 `-shm` files while it runs — a lone `.db` taken during a write can be a database missing its last
 transaction.
 
@@ -73,6 +73,12 @@ open, so an older database is upgraded in place.
 Pull the image and restart. There is no migration step to run by hand, and
 `node --disable-warning=ExperimentalWarning` hides the `node:sqlite` experimental notice rather than
 disabling anything.
+
+An install from before the rename keeps its database as `wbtv.db`: the first boot under the new name
+moves that file — with its `-wal` and `-shm` — to `videodyne.db` and logs `[db] renamed wbtv.db to
+videodyne.db`. Nothing else on disk moves, and a backup taken before the upgrade restores under either
+name. A tool that opens the file directly (`tools/mvtool.mjs --db`) has to respect the order: boot the
+server once, then point `--db` at `videodyne.db`.
 
 ## 6. The three things that use disk
 

@@ -8,7 +8,10 @@ import { DatabaseSync } from 'node:sqlite';
 import Fastify from 'fastify';
 import { initAuth } from '../src/auth.js';
 
-const COOKIE = 'wbtv_session';
+// The issued cookie is the new name; the old one is still honoured, so it gets a constant of its own
+// rather than a stray literal (BRAND/B5).
+const COOKIE = 'videodyne_session';
+const LEGACY_COOKIE = 'wbtv_session';
 const PASSWORD = 'hunter2!';
 const KEY = 'k'.repeat(24);
 const SECRET = 'secret-that-signs-the-cookie';
@@ -18,6 +21,7 @@ const SALT = 'salt-that-goes-with-the-password';
 const hashPw = (pw, salt) => crypto.scryptSync(pw, salt, 32).toString('base64url');
 const sign = (exp, secret = SECRET) => crypto.createHmac('sha256', secret).update(String(exp)).digest('base64url');
 const cookie = (exp, secret) => `${COOKIE}=${exp}.${sign(exp, secret)}`;
+const legacyCookie = (exp) => cookie(exp).replace(COOKIE, LEGACY_COOKIE);
 const soon = () => Math.floor(Date.now() / 1000) + 3600;
 const past = () => Math.floor(Date.now() / 1000) - 60;
 
@@ -54,8 +58,10 @@ test('a protected prefix needs a key and answers with a challenge; /healthz stay
   assert.equal((await get('/healthz')).statusCode, 200);
 });
 
-test('the api key is accepted as x-wbtv-key, as a bearer token and as ?key=', async () => {
+test('the api key is accepted as x-videodyne-key, still as x-wbtv-key, as a bearer token and as ?key=', async () => {
   const { get } = await setup();
+  assert.equal((await get('/api/probe', { 'x-videodyne-key': KEY })).statusCode, 200);
+  // the pre-rename header is what every Android build in the field sends, so it has to keep working
   assert.equal((await get('/api/probe', { 'x-wbtv-key': KEY })).statusCode, 200);
   assert.equal((await get('/api/probe', { authorization: `Bearer ${KEY}` })).statusCode, 200);
   assert.equal((await get('/api/probe', { authorization: `bearer ${KEY}` })).statusCode, 200);
@@ -71,6 +77,8 @@ test('a wrong key is rejected whether or not it has the same length as the real 
 test('a valid cookie is accepted; a tampered signature and an expired one are not', async () => {
   const { get } = await setup();
   assert.equal((await get('/api/probe', { cookie: cookie(soon()) })).statusCode, 200);
+  // a browser that logged in before the rename holds the old cookie name: the session survives it
+  assert.equal((await get('/api/probe', { cookie: legacyCookie(soon()) })).statusCode, 200);
   assert.equal((await get('/api/probe', { cookie: cookie(soon(), 'not-the-secret') })).statusCode, 401);
   assert.equal((await get('/api/probe', { cookie: cookie(past()) })).statusCode, 401);
 });
@@ -82,9 +90,18 @@ test('the login sets a working cookie, and a wrong password of the same length i
   const ok = await post('/api/auth/login', { password: PASSWORD });
   assert.equal(ok.statusCode, 200);
   const set = String(ok.headers['set-cookie']);
-  assert.match(set, /^wbtv_session=\d+\.[\w-]+;/);
+  assert.match(set, /^videodyne_session=\d+\.[\w-]+;/);
   assert.match(set, /HttpOnly/);
   assert.equal((await get('/api/probe', { cookie: set.split(';')[0] })).statusCode, 200);
+});
+
+test('logging out clears the issued cookie and the pre-rename one', async () => {
+  const { post } = await setup();
+  const out = await post('/api/auth/logout', {});
+  assert.equal(out.statusCode, 200);
+  const cleared = [].concat(out.headers['set-cookie']).map((c) => c.split(';')[0]);
+  // a stale old cookie left behind is a session that outlives the logout that asked for it
+  assert.deepEqual(cleared.sort(), [`${COOKIE}=`, `${LEGACY_COOKIE}=`].sort());
 });
 
 test('status stays reachable without a key and reports the gate honestly', async () => {
@@ -101,7 +118,7 @@ test('setting a password through the route locks the app and returns a key that 
   const { key } = set.json();
   assert.ok(key && key.length >= 24, 'a key is generated with the password');
   assert.equal((await get('/api/probe')).statusCode, 401);
-  assert.equal((await get('/api/probe', { 'x-wbtv-key': key })).statusCode, 200);
+  assert.equal((await get('/api/probe', { 'x-videodyne-key': key })).statusCode, 200);
 
   // and deleting it opens the app again, with the row gone
   const del = await app.inject({ method: 'DELETE', url: '/api/auth', headers: { 'x-wbtv-key': key } });

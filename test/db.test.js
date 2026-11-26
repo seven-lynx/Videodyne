@@ -55,6 +55,8 @@ CREATE TABLE mv_jobs (
 /** Write a pre-migration database in `dir` holding one library, one channel and one item. */
 function writeOldDb(dir, libraries = OLD_LIBRARIES) {
   fs.mkdirSync(dir, { recursive: true });
+  // written under the pre-rename filename on purpose: this fixture is what proves `openDb` renames it
+  // in place and keeps the rows (BRAND/B5)
   const db = new DatabaseSync(path.join(dir, 'wbtv.db'));
   db.exec(libraries + OLD_TABLES);
   db.prepare("INSERT INTO libraries(id,name,path,type,last_scan) VALUES(1,'Films','/media/films','movies',0)").run();
@@ -71,6 +73,8 @@ test('an old database gains the columns only migrate() knows about, and keeps it
   const dir = writeOldDb(fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-olddb-')));
   const db = openDb(dir);
   try {
+    assert.ok(fs.existsSync(path.join(dir, 'videodyne.db')), 'the pre-rename database was renamed on open');
+    assert.equal(fs.existsSync(path.join(dir, 'wbtv.db')), false, 'and the old filename is gone');
     assert.ok(columns(db, 'libraries').includes('channel_group'));
     assert.ok(columns(db, 'libraries').includes('group_mode'));
     assert.ok(columns(db, 'channels').includes('grp'));
@@ -121,5 +125,21 @@ test('opening an already migrated database again changes nothing', () => {
     assert.ok(columns(second, 'libraries').includes('group_mode'));
   } finally {
     second.close();
+  }
+});
+
+test('a pre-rename database takes its write-ahead sidecars with it', () => {
+  const dir = writeOldDb(fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-sidecar-')));
+  // A zero-length WAL is the legal "nothing pending" state and the only sidecar a test can fake without
+  // inventing pages SQLite would try to replay. If the rename moved the database alone, the old `-wal`
+  // would be left behind and the next real transaction on this install would replay into nothing.
+  fs.writeFileSync(path.join(dir, 'wbtv.db-wal'), '');
+  const db = openDb(dir);
+  try {
+    assert.ok(fs.existsSync(path.join(dir, 'videodyne.db-wal')), 'the sidecar followed the database');
+    assert.equal(fs.existsSync(path.join(dir, 'wbtv.db-wal')), false, 'no WAL orphaned under the old name');
+    assert.equal(db.prepare('SELECT COUNT(*) AS n FROM items').get().n, 1, 'and the library is intact');
+  } finally {
+    db.close();
   }
 });
