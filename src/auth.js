@@ -1,9 +1,12 @@
-// Optional access control. Off by default (WBTV is meant for a home LAN). When a password is set:
+// Optional access control. Off by default (Videodyne is meant for a home LAN). When a password is set:
 //  - browsers log in once and get a signed cookie
-//  - other apps (Android TV app, IPTV players, Plex/Jellyfin) use the API key: header "Authorization: Bearer <key>", "x-wbtv-key", or "?key=<key>"
+//  - other apps (Android TV app, IPTV players, Plex/Jellyfin) use the API key: header "Authorization: Bearer <key>", "x-videodyne-key", or "?key=<key>"
 import crypto from 'node:crypto';
 
-const COOKIE = 'wbtv_session';
+// Only the new names are issued, both are read: a viewer's browser still holds the pre-rename cookie,
+// and an Android build in the field still sends the old header (BRAND/B5).
+const COOKIE = 'videodyne_session';
+const LEGACY_COOKIE = 'wbtv_session';
 const DAYS = 30;
 const PROTECTED = ['/api/', '/live/', '/iptv/', '/auto/', '/lineup', '/discover.json', '/device.xml'];
 const OPEN = new Set(['/api/auth/status', '/api/auth/login', '/api/auth/logout']);
@@ -53,11 +56,18 @@ export function initAuth(app, db, { now = Date.now, sleep = (ms) => new Promise(
     const exp = Math.floor(Date.now() / 1000) + DAYS * 86400;
     return `${COOKIE}=${exp}.${sign(exp)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${DAYS * 86400}`;
   };
-  const cookieOf = (req) => (req.headers.cookie || '').split(';').map((s) => s.trim()).find((s) => s.startsWith(COOKIE + '='))?.slice(COOKIE.length + 1);
+  const cookieOf = (req) => {
+    const pairs = (req.headers.cookie || '').split(';').map((s) => s.trim());
+    for (const name of [COOKIE, LEGACY_COOKIE]) {
+      const pair = pairs.find((s) => s.startsWith(name + '='));
+      if (pair) return pair.slice(name.length + 1);
+    }
+    return undefined;
+  };
   const valid = (req) => {
     if (!auth) return true;
     const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-    const key = req.headers['x-wbtv-key'] || bearer || req.query?.key;
+    const key = req.headers['x-videodyne-key'] || req.headers['x-wbtv-key'] || bearer || req.query?.key;
     if (key && same(key, auth.apiKey)) return true;
     const c = cookieOf(req);
     if (c) {
@@ -87,7 +97,11 @@ export function initAuth(app, db, { now = Date.now, sleep = (ms) => new Promise(
     throttle.reset();
     return reply.header('Set-Cookie', makeCookie()).send({ ok: true });
   });
-  app.post('/api/auth/logout', async (req, reply) => reply.header('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; Max-Age=0`).send({ ok: true }));
+  // Both names are cleared: a browser that logged in before the rename still holds the old cookie, and
+  // clearing only the new one would leave it signed in after it asked to leave.
+  app.post('/api/auth/logout', async (req, reply) => reply
+    .header('Set-Cookie', [`${COOKIE}=; Path=/; HttpOnly; Max-Age=0`, `${LEGACY_COOKIE}=; Path=/; HttpOnly; Max-Age=0`])
+    .send({ ok: true }));
 
   // the hook above already requires a login for everything below once a password exists
   app.post('/api/auth/password', async (req, reply) => {

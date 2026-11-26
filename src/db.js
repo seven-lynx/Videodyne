@@ -82,9 +82,25 @@ CREATE INDEX IF NOT EXISTS idx_blocks_item ON blocks(item_id);
 CREATE INDEX IF NOT EXISTS idx_prog_item ON programmes(item_id);
 `;
 
+const DB_FILE = 'videodyne.db';
+const LEGACY_DB_FILE = 'wbtv.db';
+
 export function openDb(dir) {
   fs.mkdirSync(dir, { recursive: true });
-  const db = new DatabaseSync(path.join(dir, 'wbtv.db'));
+  const file = path.join(dir, DB_FILE);
+  // The rename is the one upgrade a user could lose a library on, so it happens once, in place, and
+  // only when the new name is absent. The sidecars move with it: a `-wal` left behind belongs to the
+  // file SQLite is about to open, and renaming the database alone would orphan the last transaction.
+  if (!fs.existsSync(file)) {
+    const legacy = path.join(dir, LEGACY_DB_FILE);
+    if (fs.existsSync(legacy)) {
+      for (const suffix of ['', '-wal', '-shm']) {
+        if (fs.existsSync(legacy + suffix)) fs.renameSync(legacy + suffix, file + suffix);
+      }
+      console.log(`[db] renamed ${LEGACY_DB_FILE} to ${DB_FILE}`);
+    }
+  }
+  const db = new DatabaseSync(file);
   db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
   db.exec(SCHEMA);
   migrate(db);

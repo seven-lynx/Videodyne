@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Music-video housekeeping.  usage:
-//   node tools/mvtool.mjs audit <music video folder> [--db /config/wbtv.db] [--csv report.csv] [--json plan.json]
+//   node tools/mvtool.mjs audit <music video folder> [--db /config/videodyne.db] [--csv report.csv] [--json plan.json]
 // "audit" only READS: it changes nothing. It reports what each file is called now, what it should be called, whether the year in its
 // .nfo is a real release year (or just an upload / download date), and the year and genre your own music library knows for that song.
 import fs from 'node:fs';
@@ -107,7 +107,7 @@ const csv = (rows) => ['file,new name,artist,title,old year,new year,year from,g
 if (process.argv[1]?.endsWith('mvtool.mjs')) {
   const [cmd, dir, ...rest] = process.argv.slice(2);
   const opt = (k) => { const i = rest.indexOf(k); return i >= 0 ? rest[i + 1] : null; };
-  const usage = () => { console.log('usage:\n  node tools/mvtool.mjs audit <folder> [--db /config/wbtv.db] [--csv report.csv]   (read-only)\n  node tools/mvtool.mjs fix <folder> --db /config/wbtv.db [--apply]            (dry run unless --apply)\n  node tools/mvtool.mjs undo <undo.json>'); process.exit(1); };
+  const usage = () => { console.log('usage:\n  node tools/mvtool.mjs audit <folder> [--db /config/videodyne.db] [--csv report.csv]   (read-only)\n  node tools/mvtool.mjs fix <folder> --db /config/videodyne.db [--apply]            (dry run unless --apply)\n  node tools/mvtool.mjs undo <undo.json>'); process.exit(1); };
   if (cmd === 'audit' && dir) {
     const result = audit(path.resolve(dir), { dbPath: opt('--db') });
     console.log(JSON.stringify({ summary: summarise(result), rows: result.rows }));

@@ -15,17 +15,17 @@ Years and genres come from your own music library (Videodyne's database, filled 
 ```bash
 # 1. read-only report (the media folder is mounted read-only, so this cannot change anything)
 docker run --rm -v "/path/to/Music Videos":/mv:ro -v /opt/wbtv:/db:ro wb20244/wbtv:latest \
-  node tools/mvtool.mjs audit /mv --db /db/wbtv.db --csv /tmp/report.csv
+  node tools/mvtool.mjs audit /mv --db /db/videodyne.db --csv /tmp/report.csv
 
 # 2. dry run, then do it
-docker run --rm -v "/path/to/Music Videos":/mv -v /opt/wbtv:/db:ro wb20244/wbtv:latest node tools/mvtool.mjs fix /mv --db /db/wbtv.db
-docker run --rm -v "/path/to/Music Videos":/mv -v /opt/wbtv:/db:ro wb20244/wbtv:latest node tools/mvtool.mjs fix /mv --db /db/wbtv.db --apply
+docker run --rm -v "/path/to/Music Videos":/mv -v /opt/wbtv:/db:ro wb20244/wbtv:latest node tools/mvtool.mjs fix /mv --db /db/videodyne.db
+docker run --rm -v "/path/to/Music Videos":/mv -v /opt/wbtv:/db:ro wb20244/wbtv:latest node tools/mvtool.mjs fix /mv --db /db/videodyne.db --apply
 
 # 3. changed your mind
 docker run --rm -v "/path/to/Music Videos":/mv wb20244/wbtv:latest node tools/mvtool.mjs undo /mv/.mvtool/<date>/undo.json
 ```
 
-If your Videodyne database is in use, copy `wbtv.db` (and its `-wal`/`-shm` files) somewhere first and point `--db` at the copy. Then let Videodyne scan the library twice (the second scan confirms the old file names are really gone).
+If your Videodyne database is in use, copy `videodyne.db` (and its `-wal`/`-shm` files) somewhere first and point `--db` at the copy. An install from before the rename keeps the same file under its old name until the server has booted once: start it, then point `--db` at `videodyne.db`. Then let Videodyne scan the library twice (the second scan confirms the old file names are really gone).
 
 ## mvdl.py - fetch music videos from the command line
 

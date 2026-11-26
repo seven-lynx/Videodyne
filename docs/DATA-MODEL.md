@@ -1,14 +1,14 @@
 # Data model
 
-One SQLite file, `<config>/wbtv.db`, opened by `src/db.js:85-92` with `journal_mode=WAL`,
+One SQLite file, `<config>/videodyne.db`, opened by `src/db.js:88-108` with `journal_mode=WAL`,
 `synchronous=NORMAL`, `foreign_keys=ON` and `busy_timeout=5000`. `node:sqlite`'s `DatabaseSync` is
 synchronous, so every write is a blocking call on the event loop — which is why transactions are kept
-short and never contain an `await` (`db.js:125-128`).
+short and never contain an `await` (`db.js:141-144`).
 
 ## 1. Rules that outlive any one table
 
 - **A new column is two edits.** It goes into `SCHEMA` (`db.js:7-83`) *and* into a `migrate()` block
-  (`db.js:94-123`). A fresh database gets it from `SCHEMA`; an installed one gets it from the ALTER.
+  (`db.js:110-139`). A fresh database gets it from `SCHEMA`; an installed one gets it from the ALTER.
   Adding only one half is the defect that produced issue #2.
 - **JSON lives in TEXT.** `studios`, `genres`, `actors` on `shows`/`items` and `segments` on
   `promos` are `JSON.stringify`d arrays. Readers parse them directly (`guide.js:30`), so a writer that
@@ -103,7 +103,7 @@ rewriting every path.
 
 ## 6. Migrations that exist today
 
-`migrate()` (`db.js:94-123`) is six independent repairs, each guarded by what it finds, so it is safe
+`migrate()` (`db.js:110-139`) is six independent repairs, each guarded by what it finds, so it is safe
 to run on every open:
 
 1. a pre-`music` `libraries` table whose `CHECK` refused every new type is rebuilt without it

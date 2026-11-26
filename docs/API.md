@@ -6,8 +6,11 @@ Everything the web UI and the Android TV app do goes through this API, so you ca
 
 Off by default. When you set a password (Setup > Settings > Security) every endpoint below except `/healthz` and `/api/auth/*` needs one of:
 
-- the session cookie from `POST /api/auth/login` (browsers), or
-- the **access key**, sent as `Authorization: Bearer <key>`, `x-wbtv-key: <key>`, or `?key=<key>` (apps, scripts, IPTV players).
+- the session cookie from `POST /api/auth/login` — `videodyne_session` (browsers), or
+- the **access key**, sent as `Authorization: Bearer <key>`, `x-videodyne-key: <key>`, or `?key=<key>` (apps, scripts, IPTV players).
+
+The pre-rename spellings `wbtv_session` and `x-wbtv-key` are still accepted, so a browser or an app built
+before the rename is not locked out; only the new names are issued.
 
 A missing or wrong credential returns `401 {"error":"login required"}`.
 

@@ -74,7 +74,9 @@ framework, no bundler, ever.
 - `npm test` green, and say how many tests.
 - The docs that the change invalidates are in the same commit ([API.md](API.md), [SETTINGS.md](SETTINGS.md),
   [ENVIRONMENT.md](ENVIRONMENT.md), [FEATURES.md](FEATURES.md)).
-- A wire format is frozen: `x-wbtv-key`, `wbtv_session`, `tvg-id="wbtv.`, `WBTV_*`. Changing one is a
-  decision for the maintainer, not a refactor.
+- A wire format is frozen: `x-videodyne-key`, `videodyne_session`, `tvg-id="videodyne.`, `WBTV_*`. Changing
+  one is a decision for the maintainer, not a refactor. The rename away from the `wbtv` spellings kept the
+  old header and cookie accepted (`src/auth.js`) and moves a pre-rename `wbtv.db` on the first boot
+  (`src/db.js`); a tuner source has to be re-added for the new `tvg-id` prefix.
 - A change that alters behaviour and is not purely cosmetic needs a note in the changelog of the fork
   that carries it ([UPSTREAM.md](UPSTREAM.md) exists so a rebase never loses a fix).

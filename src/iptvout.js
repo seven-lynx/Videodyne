@@ -31,7 +31,7 @@ export function registerIptvOut(app, db, getBroadcaster, getToken = () => '') {
     const base = baseUrl(req);
     let out = `#EXTM3U url-tvg="${base}/iptv/epg.xml${tq()}"\n`;
     for (const c of channels()) {
-      out += `#EXTINF:-1 tvg-id="wbtv.${c.id}" tvg-chno="${c.number}" tvg-name="${attr(c.name)}"${logoFile(c.id) ? ` tvg-logo="${base}/api/channels/${c.id}/logo${tq()}"` : ''} group-title="${groupOf[c.kind] || 'TV'}",${attr(c.name)}\n`;
+      out += `#EXTINF:-1 tvg-id="videodyne.${c.id}" tvg-chno="${c.number}" tvg-name="${attr(c.name)}"${logoFile(c.id) ? ` tvg-logo="${base}/api/channels/${c.id}/logo${tq()}"` : ''} group-title="${groupOf[c.kind] || 'TV'}",${attr(c.name)}\n`;
       out += `${base}/live/${c.id}/index.m3u8${tq()}\n`;
     }
     return reply.type('audio/x-mpegurl').send(out);
@@ -44,10 +44,10 @@ export function registerIptvOut(app, db, getBroadcaster, getToken = () => '') {
     const epg = JSON.parse(res.body);
     const chs = channels();
     let x = '<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Videodyne">\n';
-    for (const c of chs) x += `<channel id="wbtv.${c.id}"><display-name>${esc(c.name)}</display-name><display-name>${c.number}</display-name>${logoFile(c.id) ? `<icon src="${esc(`${baseUrl(req)}/api/channels/${c.id}/logo${tq()}`)}"/>` : ''}</channel>\n`;
+    for (const c of chs) x += `<channel id="videodyne.${c.id}"><display-name>${esc(c.name)}</display-name><display-name>${c.number}</display-name>${logoFile(c.id) ? `<icon src="${esc(`${baseUrl(req)}/api/channels/${c.id}/logo${tq()}`)}"/>` : ''}</channel>\n`;
     for (const c of chs) {
       for (const p of epg.programmes[c.id] || []) {
-        x += `<programme start="${xmltvTime(p.start)}" stop="${xmltvTime(p.end)}" channel="wbtv.${c.id}">`;
+        x += `<programme start="${xmltvTime(p.start)}" stop="${xmltvTime(p.end)}" channel="videodyne.${c.id}">`;
         x += `<title>${esc(p.title)}</title>`;
         if (p.subtitle) x += `<sub-title>${esc(p.subtitle)}</sub-title>`;
         if (p.plot) x += `<desc>${esc(p.plot)}</desc>`;

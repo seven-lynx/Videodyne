@@ -54,3 +54,18 @@ test('the tuner introduces itself as Videodyne to the guide and to HDHomeRun dis
   assert.match(device.body, /<modelName>HDHR-Videodyne<\/modelName>/);
 });
 
+// A player matches a playlist entry to its programmes by the channel id, so the prefix has to be the
+// same on both sides of the pair: renamed in one and not the other leaves every programme unattached,
+// which reads as a guide that simply has nothing on (BRAND/B5).
+test('the playlist and the guide agree on the tuner prefix', async () => {
+  const app = Fastify();
+  app.get('/api/epg', async () => ({ programmes: {} }));
+  registerIptvOut(app, { prepare: () => ({ all: () => [{ id: 1, kind: 'tv', name: 'One', number: 1 }] }) }, () => null);
+  const list = await app.inject({ url: '/iptv/playlist.m3u' });
+  const epg = await app.inject({ url: '/iptv/epg.xml' });
+  await app.close();
+  assert.match(list.body, /#EXTINF:-1 tvg-id="videodyne\.1"/);
+  assert.match(epg.body, /<channel id="videodyne\.1">/);
+  assert.equal(/"wbtv\./.test(list.body + epg.body), false, 'no pre-rename channel id survives');
+});
+
