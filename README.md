@@ -10,6 +10,7 @@
   <a href="https://github.com/WB2024/WBTV/actions/workflows/docker.yml"><img src="https://img.shields.io/github/actions/workflow/status/WB2024/WBTV/docker.yml?style=flat-square&label=build" alt="Build"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/WB2024/WBTV?style=flat-square" alt="MIT licence"></a>
   <a href="https://github.com/WB2024/WBTV/stargazers"><img src="https://img.shields.io/github/stars/WB2024/WBTV?style=flat-square&color=ffd400" alt="Stars"></a>
+  <a href="https://deepwiki.com/seven-lynx/Videodyne"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 <p align="center">
