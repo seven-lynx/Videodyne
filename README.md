@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Images/Assets/1.png" alt="Videodyne - Live TV, your way" width="640">
+  <img src="Images/Assets/1.png" alt="Videodyne - Always something on." width="640">
 </p>
 
 <h3 align="center">Your own media, broadcast as real live TV.<br>No setup, no schedules to build. Point it at your library and press play.</h3>
