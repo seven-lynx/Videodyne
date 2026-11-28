@@ -13,7 +13,7 @@ import { scanLibrary } from './scanner.js';
 import { inferChannels, syncLiveChannels, talkPerTitle, setChannelNumber } from './channels.js';
 import { checkStreams, isUrl } from './iptv.js';
 import { discover, forgetSource, normalizeUrl } from './mediaserver.js';
-import { discoverPlex } from './plex.js';
+import { discoverPlex, plexClientId } from './plex.js';
 import { subsonicDiscover } from './navidrome.js';
 import { registerImvdb } from './imvdb.js';
 import { ensureSchedule, ensureChannelSchedule, rescheduleFuture } from './scheduler.js';
@@ -109,7 +109,7 @@ app.get('/api/libraries', () => db.prepare(`
 // ---- media servers (Jellyfin / Emby) as a source of TV and films
 const isNavidrome = (b) => b?.kind === 'navidrome';
 const isPlex = (b) => b?.kind === 'plex';
-const findSource = (b) => (isPlex(b) ? discoverPlex(normalizeUrl(b.url), b.token)
+const findSource = (b) => (isPlex(b) ? discoverPlex(normalizeUrl(b.url), b.token, { clientId: plexClientId(db) })
   : isNavidrome(b) ? subsonicDiscover(b.url, b.username, b.password, normalizeUrl)
   : discover(b?.url, b?.token, b?.userId));
 const publicSource = ({ salt, token, ...rest }) => rest; // credentials never go back to the browser

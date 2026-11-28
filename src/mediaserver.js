@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { cfg } from './config.js';
 import { tx } from './db.js';
 import { scanNavidrome, streamUrl as navStream, fetchLyrics as navLyrics } from './navidrome.js';
-import { scanPlex, plexPartUrl } from './plex.js';
+import { scanPlex, plexPartUrl, withClientId } from './plex.js';
 
 export const isRemote = (p) => typeof p === 'string' && p.startsWith('ms://');
 export const parseRemote = (p) => { const m = /^ms:\/\/(\d+)\/(.+)$/.exec(String(p || '')); return m ? { source: Number(m[1]), ref: m[2] } : null; };
@@ -62,7 +62,9 @@ const cache = new Map(); // id -> { at, src }
 export function getSource(db, id) {
   const hit = cache.get(id);
   if (hit && Date.now() - hit.at < 60000) return hit.src;
-  const src = db.prepare('SELECT * FROM sources WHERE id=?').get(id) || null;
+  const row = db.prepare('SELECT * FROM sources WHERE id=?').get(id) || null;
+  // signed before it is cached: the identifier never changes for an install, so the cached copy carries it too
+  const src = row?.kind === 'plex' ? withClientId(db, row) : row;
   cache.set(id, { at: Date.now(), src });
   return src;
 }
@@ -114,7 +116,7 @@ export async function scanMediaServer(db, lib, progress, { safeRemovals }) {
   if (!src) throw new Error('the media server for this library was removed');
   const view = m[2];
   if (src.kind === 'navidrome') return scanNavidrome(db, lib, src, view, progress, { safeRemovals });
-  if (src.kind === 'plex') return scanPlex(db, lib, src, view, progress, { safeRemovals });
+  if (src.kind === 'plex') return scanPlex(db, lib, withClientId(db, src), view, progress, { safeRemovals });
   const uid = src.user_id;
   const base = `/Users/${uid}/Items?ParentId=${encodeURIComponent(view)}&Recursive=true&Fields=${FIELDS}`;
   const tv = lib.type === 'tv', mv = lib.type === 'music'; // mv: a "Music Videos" library

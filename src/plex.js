@@ -20,9 +20,31 @@ const coverFile = (srcId, id) => path.join(covers(), `plex_${srcId}_${String(id)
 /** A short signature of the metadata, so a scan can tell an edited item from an unchanged one without keeping it all. */
 const sig = (o) => parseInt(crypto.createHash('md5').update(JSON.stringify(o)).digest('hex').slice(0, 7), 16);
 
+// Every request is signed as a device. One identifier shared by every install would make two Videodyne boxes on
+// one Plex account the same device, and revoking it in Plex would revoke them both, so the identifier is minted
+// once per install and kept in the settings table. `plex_client_id` is deliberately not a `DEFAULTS` key: it is
+// internal, read here and handed to `HEADERS`, and `GET`/`PUT /api/settings` must be able to neither show it nor
+// overwrite it — the same shape as `imvdb_key` and the scanner cursors.
+const CLIENT_KEY = 'plex_client_id';
+/** What a caller with no database signs as, so a request never goes out with an empty identifier (a test builds such a src). */
+const LEGACY_CLIENT_ID = 'videodyne';
+
+/** The identifier this install signs as, created on first use. Stable across restarts and upgrades. */
+export function plexClientId(db) {
+  const stored = String(db.prepare('SELECT value FROM settings WHERE key=?').get(CLIENT_KEY)?.value ?? '');
+  const id = stored.replace(/[^A-Za-z0-9-]/g, ''); // Plex documents the header as alphanumerics and dashes
+  if (id) return id;
+  const minted = crypto.randomUUID();
+  db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(CLIENT_KEY, minted);
+  return minted;
+}
+
+/** One source row, signed: every `src` that reaches this module carries the identifier, so no request helper needs an argument. */
+export const withClientId = (db, src) => (src?.kind === 'plex' ? { ...src, clientId: plexClientId(db) } : src);
+
 const HEADERS = (src) => ({
   'X-Plex-Token': src.token || '',
-  'X-Plex-Client-Identifier': 'videodyne',
+  'X-Plex-Client-Identifier': src.clientId || LEGACY_CLIENT_ID,
   'X-Plex-Product': 'Videodyne',
   'X-Plex-Version': '1',
 });
@@ -68,8 +90,8 @@ const SECTION_TYPE = { movie: 'movies', show: 'tv', artist: 'radio' };
  * ({id, name, type}), so Setup needs no Plex branch: only film and TV sections are offered, and a server with
  * neither says so instead of showing sections that cannot be added.
  */
-export async function discoverPlex(url, token, { doFetch = fetch } = {}) {
-  const src = { url, token: String(token || '').trim(), kind: 'plex' };
+export async function discoverPlex(url, token, { doFetch = fetch, clientId } = {}) {
+  const src = { url, token: String(token || '').trim(), kind: 'plex', clientId };
   if (!src.url) throw new Error('enter the server address, for example 192.168.1.111:32400');
   if (!src.token) throw new Error('enter a Plex token (Plex: Account settings, or the X-Plex-Token in any media URL)');
   const who = (await plexGet(src, '/', { doFetch }))?.MediaContainer || {};

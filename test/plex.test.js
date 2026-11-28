@@ -10,8 +10,8 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wbtv-plex-'));
 process.env.WBTV_CONFIG = dir;
 const { openDb } = await import('../src/db.js');
 const { safeRemovals } = await import('../src/scanner.js');
-const { plexPartUrl, partRef, discoverPlex, scanPlex } = await import('../src/plex.js');
-const { resolveMedia } = await import('../src/mediaserver.js');
+const { plexPartUrl, partRef, discoverPlex, scanPlex, plexClientId } = await import('../src/plex.js');
+const { resolveMedia, getSource, forgetSource } = await import('../src/mediaserver.js');
 
 // A Plex that answers JSON, so no XML, no port, no server and no media file. The `fetch` is injected the same way
 // media.js injects its `probe`: these tests assert on the requests as much as on the rows they produce, because
@@ -144,13 +144,61 @@ test('a Plex server that answers with nothing is not a deleted library', async (
 });
 
 // The product a Plex server records for the request is what its own log and device list show, so the
-// name travels on every call, not only the first (BRAND/B2). The identifier stays one constant here:
-// a per-install identifier is PLEX2/P1 and issue #29.
+// name travels on every call, not only the first (BRAND/B2). The identifier is this install's own
+// (PLEX2/P1, #29): minted once, kept in `settings`, and put on every source row before a request uses
+// it. Only a caller with no database — a test that builds a `src` by hand — reaches the old constant,
+// and that fallback is there so a request can never go out with an empty identifier.
 test('every request to Plex is signed as Videodyne', async () => {
   const f = fake();
   await discoverPlex(PLEX, 'tok1', { doFetch: f });
   assert.ok(f.seen.length > 0);
   assert.equal(f.seen[0].headers['X-Plex-Product'], 'Videodyne');
   assert.equal(f.seen[0].headers['X-Plex-Client-Identifier'], 'videodyne');
+});
+
+test('one install is one Plex device: minted once, kept, and stable across a restart', () => {
+  const { db } = setup();
+  const first = plexClientId(db);
+  assert.match(first, /^[A-Za-z0-9-]+$/, 'Plex documents the header as alphanumerics and dashes');
+  assert.equal(plexClientId(db), first, 'a second call in the same process is the same device');
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM settings WHERE key='plex_client_id'").get().n, 1, 'and is stored once');
+
+  // the same config folder reopened is the same install: an upgrade must not become a new device
+  const cfg = fs.mkdtempSync(path.join(dir, 'cfg-'));
+  const once = openDb(cfg);
+  const minted = plexClientId(once);
+  once.close();
+  const reopened = openDb(cfg);
+  assert.equal(plexClientId(reopened), minted);
+  reopened.close();
+
+  // a second install is a second device, so revoking one in Plex cannot revoke the other
+  const other = openDb(fs.mkdtempSync(path.join(dir, 'cfg-')));
+  assert.notEqual(plexClientId(other), minted);
+  other.close();
+});
+
+test('a source row carries the install identifier, and a scan sends it', async () => {
+  const { db, films } = setup();
+  const id = plexClientId(db);
+  forgetSource(1); // the id is cached for a minute across tests, and every setup() owns source 1 in its own database
+  const src = getSource(db, 1);
+  assert.equal(src.clientId, id, 'getSource signs a Plex row, so no request helper needs an extra argument');
+  const f = fake();
+  await scanPlex(db, db.prepare('SELECT * FROM libraries WHERE id=?').get(films), src, '1', { files: 0, changed: 0 }, { safeRemovals, fetch: f });
+  assert.ok(f.seen.length > 0);
+  assert.equal(f.seen[0].headers['X-Plex-Client-Identifier'], id);
+  const d = await discoverPlex(PLEX, 'tok1', { doFetch: fake(), clientId: id });
+  assert.equal(d.kind, 'plex');
+});
+
+test('a hand-edited identifier keeps only the characters Plex documents', () => {
+  const { db } = setup();
+  db.prepare("INSERT INTO settings(key,value) VALUES('plex_client_id','a b/../c') ON CONFLICT(key) DO UPDATE SET value=excluded.value").run();
+  assert.equal(plexClientId(db), 'abc');
+  const f = fake();
+  return discoverPlex(PLEX, 'tok1', { doFetch: f, clientId: plexClientId(db) }).then(() => {
+    assert.equal(f.seen[0].headers['X-Plex-Client-Identifier'], 'abc');
+  });
 });
 
