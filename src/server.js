@@ -10,7 +10,7 @@ import { cfg } from './config.js';
 import { openDb, getSettings, setSettings } from './db.js';
 import { registerGuide } from './guide.js';
 import { scanLibrary } from './scanner.js';
-import { inferChannels, syncLiveChannels, talkPerTitle } from './channels.js';
+import { inferChannels, syncLiveChannels, talkPerTitle, setChannelNumber } from './channels.js';
 import { checkStreams, isUrl } from './iptv.js';
 import { discover, forgetSource, normalizeUrl } from './mediaserver.js';
 import { discoverPlex } from './plex.js';
@@ -286,13 +286,16 @@ app.delete('/api/channels', async () => { // every empty (non-live) channel
   return { removed: Number(r.changes) };
 });
 
-app.patch('/api/channels/:id', async (req) => {
+app.patch('/api/channels/:id', async (req, reply) => {
   const { name, number, enabled } = req.body || {};
   const id = req.params.id;
   if (name !== undefined && (name === null || typeof name === 'string')) db.prepare('UPDATE channels SET name_override=? WHERE id=?').run(name && name.trim() ? name.trim().slice(0, 80) : null, id);
   if (number !== undefined && Number.isInteger(number) && number > 0) {
-    db.prepare('UPDATE channels SET number=NULL WHERE number=? AND id<>?').run(number, id); // swap-free: last write wins
-    db.prepare('UPDATE channels SET number=? WHERE id=?').run(number, id);
+    // Two channels cannot share a guide number, and the holder is not the channel being edited: refusing
+    // is a visible answer, while clearing the other row (the old "last write wins") moved a channel the
+    // user never touched - and every viewer's guide with it (#32).
+    const assigned = setChannelNumber(db, id, number);
+    if (!assigned.ok) return reply.code(409).send({ error: `Channel ${number} is already used by "${assigned.held.name}"`, channel: assigned.held });
   }
   if (enabled !== undefined) {
     db.prepare('UPDATE channels SET enabled=? WHERE id=?').run(enabled ? 1 : 0, id);

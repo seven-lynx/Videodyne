@@ -34,7 +34,7 @@ A missing or wrong credential returns `401 {"error":"login required"}`.
 | Method & path | Notes |
 |---|---|
 | `GET /api/channels` | Enabled channels: `id, key, kind, name, number, enabled, item_count`. `kind` is `tv`, `movie`, `music`, `radio`, `clips` or `live`. `?all=1` includes disabled ones |
-| `PATCH /api/channels/:id` | `{name?, number?, enabled?}` |
+| `PATCH /api/channels/:id` | `{name?, number?, enabled?}`. A `number` another channel already holds is refused with `409` and `{ error, channel }`, and the other channel keeps its number |
 | `POST /api/channels/rebuild` | Re-infer channels and re-plan |
 | `GET /api/epg?from=&to=` | Unix seconds. `{now, from, to, programmes: {channelId: [{id, item, start, end, title, subtitle, plot, season, episode, year, genres, ...}]}}` |
 | `GET /api/channels/:id/now` | `{now, programme}`: `programme` is the object `/api/epg` lists for that channel at that instant (title, subtitle, plot, genres and the rest), or `null` when nothing is scheduled — a live channel has no programme row, so it answers `null` too |
