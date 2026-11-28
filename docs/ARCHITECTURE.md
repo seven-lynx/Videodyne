@@ -57,6 +57,7 @@ config.js  ←  db.js  ←  …every stateful module
 | `broadcaster.js` | hw, config, media, scheduler, db, logos, tts, lyrics, mediaserver, streams, iptv | server |
 | `guide.js` | — (takes `app`) | server |
 | `auth.js` | `node:crypto` | server |
+| `fatal.js` | — | server |
 | `iptvout.js` | config, logos, scheduler | server |
 | `server.js` | the other 27 | — (the entry point) |
 
@@ -183,9 +184,12 @@ The rule is that a broken piece degrades and the channel keeps airing:
 - no Piper → the announcement is skipped, the programme still plays;
 - no GPU → x264 (`hw.js:67`);
 - no `yt-dlp` → a download fails with its reason in `ads.error` / `mv_jobs.error`;
-- an unhandled rejection or exception → logged and **the process keeps serving**
-  (`server.js:498-501`) — deliberate, and the reason issue #5 exists: state after an uncaught throw
-  is undefined.
+- an unhandled rejection from a peer that hung up → logged, and the server keeps serving
+  (`fatal.js` names the five codes that count);
+- an uncaught exception, or any other unhandled rejection → every channel is stopped, then the process
+  exits 1 (`fatal.js`, `server.js` boot) so the container's restart policy — or the desktop
+  supervisor — brings back a process that knows nothing is running. Issue #5: the state after an
+  uncaught throw is undefined, so continuing to serve from it is the one failure that is silent.
 
 ## 8. Where new code belongs
 
