@@ -112,7 +112,7 @@ are kept, and the next scan reconciles them through the same rule.
 | Source | Stored path | Metadata from | Notes |
 |---|---|---|---|
 | Jellyfin / Emby | `ms://<sourceId>/<itemId>` | the server's API, mapped onto the same columns as an NFO | one API for both; a Plex music library is refused, a Navidrome one is not |
-| Plex | `ms://<sourceId>/<partKey>` | the server's JSON API | durations are milliseconds, the token travels as `X-Plex-Token` |
+| Plex | `ms://<sourceId>/<partKey>` | the server's JSON API | durations are milliseconds, the token travels as `X-Plex-Token`, and every call is signed with this install's own client identifier — two boxes on one Plex account are two devices |
 | Navidrome / Subsonic | `ms://<sourceId>/<songId>` | the server's API | stores a token + salt, never the password; cover art and lyrics come from the server |
 | IPTV playlist | a URL in `live_streams` | the playlist itself | not an `items` row at all |
 
