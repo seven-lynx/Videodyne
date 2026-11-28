@@ -465,3 +465,18 @@ export function syncLiveChannels(db) {
     for (const [key, ch] of existing) if (!keep.has(key)) db.prepare('DELETE FROM channels WHERE id=?').run(ch.id);
   });
 }
+
+/**
+ * Give a channel a guide number, or refuse it.
+ *
+ * Two channels cannot share a number, and the channel already holding it is not the one being edited.
+ * The route used to clear the other row's number first ("last write wins"), which silently moved a
+ * channel the user had not touched - and in a guide sorted by number, moved it for every viewer. The
+ * caller answers 409 and names the holder, so the choice is visible instead of performed.
+ */
+export function setChannelNumber(db, id, number) {
+  const held = db.prepare('SELECT id, COALESCE(name_override, auto_name) AS name FROM channels WHERE number=? AND id<>?').get(number, id);
+  if (held) return { ok: false, held };
+  db.prepare('UPDATE channels SET number=? WHERE id=?').run(number, id);
+  return { ok: true, held: null };
+}

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { openDb, setSettings } from '../src/db.js';
-import { inferChannels } from '../src/channels.js';
+import { inferChannels, setChannelNumber } from '../src/channels.js';
 
 // A channel name is a brand word, not a description of the medium: `Nightshade` is a network whose two
 // channels are `Nightshade` (shows) and `Nightshade Grindhouse` (films), and a music station is its
@@ -90,3 +90,27 @@ test('what the roster cannot place lands in a catch-all of its own brand', () =>
     assert.ok(tv.network && movie.network && tv.network !== movie.network, 'each medium has its own catch-all brand');
   } finally { done(); }
 });
+
+test('a guide number another channel holds is refused, and that channel keeps it', () => {
+  // The route used to clear the other row's number first, so saving channel B moved channel A - silently,
+  // and for every viewer, since the guide is sorted by number (#32). A refusal is the visible answer.
+  const { db, done } = fresh('wbtv-numbers-');
+  try {
+    const ins = db.prepare("INSERT INTO channels(key,kind,auto_name,number) VALUES(?,?,'',?)");
+    const one = Number(ins.run('one', 'tv', 7).lastInsertRowid);
+    const two = Number(ins.run('two', 'tv', 8).lastInsertRowid);
+    db.prepare("UPDATE channels SET auto_name='One' WHERE id=?").run(one);
+
+    const taken = setChannelNumber(db, two, 7);
+    assert.equal(taken.ok, false);
+    assert.equal(taken.held.id, one, 'the answer names the channel that holds it');
+    assert.equal(taken.held.name, 'One');
+    assert.equal(db.prepare('SELECT number FROM channels WHERE id=?').get(one).number, 7, 'the holder was not moved');
+    assert.equal(db.prepare('SELECT number FROM channels WHERE id=?').get(two).number, 8, 'and neither was the caller');
+
+    assert.deepEqual(setChannelNumber(db, two, 9), { ok: true, held: null });
+    assert.equal(db.prepare('SELECT number FROM channels WHERE id=?').get(two).number, 9);
+    assert.equal(setChannelNumber(db, two, 9).ok, true, 'a channel keeping its own number is not a conflict');
+  } finally { done(); }
+});
+
