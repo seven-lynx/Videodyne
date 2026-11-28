@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS items (
   season INTEGER, episode INTEGER, aired TEXT, rating REAL, mpaa TEXT,
   runtime REAL DEFAULT 0, probed INTEGER DEFAULT 0,
   studios TEXT DEFAULT '[]', genres TEXT DEFAULT '[]', actors TEXT DEFAULT '[]',
-  poster TEXT, mtime REAL, size REAL, nfo_mtime REAL, channel_id INTEGER, artist TEXT, album TEXT,
+  poster TEXT, mtime REAL, size REAL, nfo_mtime REAL, artist TEXT, album TEXT,
   probe_attempts INTEGER DEFAULT 0, probe_checked REAL -- how many ffprobes failed on this file and when the last one ran
 );
 CREATE TABLE IF NOT EXISTS live_streams (
@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS live_streams (
   name TEXT, url TEXT NOT NULL, grp TEXT, logo TEXT, tvg_id TEXT, src_kind TEXT DEFAULT 'hls',
   alive INTEGER, checked REAL, channel_id INTEGER, UNIQUE(library_id, url)
 );
-CREATE INDEX IF NOT EXISTS idx_items_channel ON items(channel_id);
 CREATE INDEX IF NOT EXISTS idx_items_lib ON items(library_id);
 CREATE INDEX IF NOT EXISTS idx_items_show ON items(show_id); -- deleting a show (cascade) and the channel planner look episodes up by show
 CREATE INDEX IF NOT EXISTS idx_shows_lib ON shows(library_id);
@@ -107,7 +106,7 @@ export function openDb(dir) {
   return db;
 }
 
-function migrate(db) {
+export function migrate(db) {
   // older DBs: libraries.type had a CHECK that only allowed movies/tv/ads
   const lib = db.prepare("SELECT sql FROM sqlite_master WHERE name='libraries'").get();
   if (lib?.sql.includes('CHECK')) {
@@ -123,6 +122,12 @@ function migrate(db) {
   // older DBs: a file ffprobe could not read, and when it was last tried -- so one failure is a retry, not a verdict
   if (!icols.includes('probe_attempts')) db.exec('ALTER TABLE items ADD COLUMN probe_attempts INTEGER DEFAULT 0');
   if (!icols.includes('probe_checked')) db.exec('ALTER TABLE items ADD COLUMN probe_checked REAL');
+  // older DBs: items.channel_id was written by nothing - membership is `channel_items` - and it carried
+  // an index on the largest table. The index goes first, because SQLite refuses to drop an indexed column.
+  if (icols.includes('channel_id')) {
+    db.exec('DROP INDEX IF EXISTS idx_items_channel;');
+    db.exec('ALTER TABLE items DROP COLUMN channel_id');
+  }
   // older DBs: blocks.promo_id (announcement slots)
   if (!db.prepare('PRAGMA table_info(blocks)').all().some((c) => c.name === 'promo_id')) db.exec('ALTER TABLE blocks ADD COLUMN promo_id INTEGER');
   if (!db.prepare('PRAGMA table_info(channels)').all().some((c) => c.name === 'grp')) db.exec('ALTER TABLE channels ADD COLUMN grp TEXT'); // the channel group its programmes come from (a chip in the guide)

@@ -24,9 +24,11 @@ short and never contain an `await` (`db.js:141-144`).
   ladder in `media.js:46` (`0`, 1 h, 6 h, 24 h) by `probePending` with four workers, giving up after
   the fourth attempt with one log line. A failed probe never zeroes a duration the NFO supplied
   (`media.js:63-64`).
-- **A dead column stays documented.** `items.channel_id` and `idx_items_channel` (`db.js:35,43`) are
-  written by nothing; membership is `channel_items`. Removing them is a schema change, so they are
-  recorded here rather than quietly dropped (issue #34).
+- **The dead column is gone.** `items.channel_id` and `idx_items_channel` were written by nothing —
+  membership is `channel_items` — so #34 removed both: `SCHEMA` no longer creates them and `migrate()`
+  drops them from a database that still has one (the index first, because SQLite refuses an indexed
+  column). A column nobody writes is dead weight on the largest table, and keeping it "documented"
+  only made the next reader wonder what wrote it.
 
 ## 2. The tables
 
@@ -60,7 +62,7 @@ Every column below exists in `SCHEMA`; the note is only where the name does not 
 | `sources` | `id`, `kind` ∈ `jellyfin`, `emby`, `plex`, `navidrome`, `name`, `url` UNIQUE, `token`, `user_id`, `salt` (Navidrome only) — never returned by a route (`server.js:114`) |
 | `mv_jobs` | `id`, `imvdb_id` UNIQUE, `artist`, `title`, `year`, `status`, `error` (last 300 chars), `file` (relative to the library), `created`, `updated` (ms), `force` (keep it even if it looks like a still or a lyric video) |
 | `shows` | `id`, `library_id`, `path` UNIQUE, `title`, `plot`, `year`, `rating`, `mpaa`, `studios`, `genres`, `poster` (a file under `config/covers`) |
-| `items` | `id`, `library_id`, `show_id`, `kind`, `path` UNIQUE, `title`, `plot`, `year`, `season`, `episode`, `aired`, `rating`, `mpaa`, `runtime`, `probed`, `studios`, `genres`, `actors`, `poster`, `mtime`, `size`, `nfo_mtime` (when the sidecar was last read), `channel_id` (**unused**, #34), `artist`, `album`, `probe_attempts`, `probe_checked` (seconds) |
+| `items` | `id`, `library_id`, `show_id`, `kind`, `path` UNIQUE, `title`, `plot`, `year`, `season`, `episode`, `aired`, `rating`, `mpaa`, `runtime`, `probed`, `studios`, `genres`, `actors`, `poster`, `mtime`, `size`, `nfo_mtime` (when the sidecar was last read), `artist`, `album`, `probe_attempts`, `probe_checked` (seconds) |
 | `live_streams` | `id`, `library_id`, `name`, `url`, `grp` (the playlist's `group-title`), `logo`, `tvg_id`, `src_kind` ∈ `hls`, `youtube`, …, `alive` (NULL = never checked), `checked` (seconds), `channel_id`, `UNIQUE(library_id, url)` |
 | `channels` | `id`, `key` UNIQUE (the inference identity, e.g. `studio:bbc one`), `kind` ∈ `tv`, `movie`, `music`, `radio`, `clips`, `live`, `talk`, `auto_name` (what inference chose), `name_override` (what the user chose — `COALESCE`d over the auto name at every read), `number`, `enabled`, `item_count` (denormalised, recomputed by `inferChannels`), `grp`, `network` (the brand a genre, era or catch-all channel belongs to — `channels.js`'s roster; NULL for a studio, group, talk or live channel) |
 | `channel_items` | `channel_id`, `item_id`, PK on both |
