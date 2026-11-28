@@ -14,6 +14,20 @@ user's (`docs/DATA-MODEL.md`). The automatic names come from one roster, `NETWOR
 Real networks are lumpy, so not every genre has a sibling: four film genres carry a brand of their own,
 because their television counterpart belongs to a different network.
 
+## Names that are not cleared yet
+
+Everything above is the fork's own invention, but six names are close enough to an ordinary phrase that
+they want a trademark search before a release markets them: **`Gavel Lineup`**, **`Hearthside Popcorn`**,
+**`After Hours`**, **`Extra Time`**, **`Bulletin`** and **`Cadence`**. NAMES Q2 put them in the roster
+before that search existed and asked for them to be flagged here (ruled 2026-11-27: ship them, flag
+them). The flag is what keeps a later rename cheap — each is one table row and one `NETWORKS` entry in
+`src/channels.js`, a user override (`name_override`) wins over all of them, and no `tvg-id` is derived
+from a name.
+
+The network words are coined and share no mark with a broadcaster. These six are ordinary English used
+across the industry, which is exactly why they get the search before a store listing or a printed guide
+names them.
+
 A genre that is **not** on the roster invents no channel. The item falls to the catch-all for its medium
 (below), because a genre nobody funded is not a brand.
 

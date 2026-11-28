@@ -1,8 +1,8 @@
 // Optional music-video discovery and download using IMVDb (the Internet Music Video Database; https://imvdb.com/developers/api).
-// You bring your own app key. WBTV lists the artists in your music library, shows each artist's videos on IMVDb (marking the ones you
+// You bring your own app key. Videodyne lists the artists in your music library, shows each artist's videos on IMVDb (marking the ones you
 // already have), and downloads the ones you pick into  <music video folder>/<Artist>/<Artist> - <Title>.mp4  with a clean .nfo and a poster.
-// It only works when (1) a key is set, (2) a WBTV password is on (so nobody else on the network can spend your quota or start downloads),
-// and (3) the music video folder is mounted writable: WBTV's media mounts are read-only by default and stay so unless you choose otherwise.
+// It only works when (1) a key is set, (2) a Videodyne password is on (so nobody else on the network can spend your quota or start downloads),
+// and (3) the music video folder is mounted writable: Videodyne's media mounts are read-only by default and stay so unless you choose otherwise.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,7 +13,7 @@ import { nfoXml } from '../tools/mvfix.mjs';
 import { judgeUpload, looksStill } from './stillcheck.js';
 
 const BASE = process.env.IMVDB_BASE || 'https://imvdb.com/api/v1';
-const UA = 'WBTV (+https://github.com/WB2024/WBTV)';
+const UA = 'Videodyne (+https://github.com/seven-lynx/Videodyne)';
 const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 const now = () => Math.floor(Date.now() / 1000);
 
@@ -156,16 +156,16 @@ export function registerImvdb(app, { db, authEnabled, runScan, download = ytdlpD
     const lib = musicLibrary(db);
     const problems = [];
     if (!getKey(db)) problems.push('Add your IMVDb app key.');
-    if (!authEnabled()) problems.push('Turn on a WBTV password first (Settings > Security): this feature downloads files and uses your IMVDb quota, so it must not be open to everyone on your network.');
+    if (!authEnabled()) problems.push('Turn on a Videodyne password first (Settings > Security): this feature downloads files and uses your IMVDb quota, so it must not be open to everyone on your network.');
     if (!lib) problems.push('Add a Music videos library first.');
-    else if (!writable(lib.path)) problems.push(`The music video folder (${lib.path}) is read-only inside WBTV. Mount it writable (remove ":ro" on that one volume) to let WBTV save downloads there.`);
+    else if (!writable(lib.path)) problems.push(`The music video folder (${lib.path}) is read-only inside Videodyne. Mount it writable (remove ":ro" on that one volume) to let Videodyne save downloads there.`);
     return { ok: !problems.length, problems, lib };
   };
   const gate = (reply) => { const r = ready(); if (!r.ok) { reply.code(400).send({ error: r.problems[0] }); return null; } return r; };
 
   app.get('/api/imvdb/status', () => { const r = ready(); return { keySet: !!getKey(db), authEnabled: authEnabled(), library: r.lib ? { id: r.lib.id, name: r.lib.name, path: r.lib.path, writable: writable(r.lib.path) } : null, ready: r.ok, problems: r.problems }; });
   app.put('/api/imvdb/key', async (req, reply) => {
-    if (!authEnabled()) return reply.code(400).send({ error: 'Turn on a WBTV password first (Settings > Security).' });
+    if (!authEnabled()) return reply.code(400).send({ error: 'Turn on a Videodyne password first (Settings > Security).' });
     const k = String(req.body?.key || '').trim();
     if (k && !/^[A-Za-z0-9_-]{6,128}$/.test(k)) return reply.code(400).send({ error: 'That does not look like an IMVDb app key.' });
     setKey(db, k);
@@ -237,7 +237,7 @@ export function registerImvdb(app, { db, authEnabled, runScan, download = ytdlpD
     } finally {
       working = false;
       const lib = musicLibrary(db);
-      if (lib && db.prepare("SELECT 1 FROM mv_jobs WHERE status='done' AND updated>?").get(now() - 3600)) runScan?.([lib.id]); // let WBTV pick up what was saved
+      if (lib && db.prepare("SELECT 1 FROM mv_jobs WHERE status='done' AND updated>?").get(now() - 3600)) runScan?.([lib.id]); // let Videodyne pick up what was saved
     }
   }
   function kick() { setImmediate(() => work().catch((e) => console.error('[imvdb] worker:', e?.message || e))); }

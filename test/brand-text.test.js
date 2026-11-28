@@ -55,6 +55,17 @@ test('the documents name the product the same way', () => {
   assert.deepEqual(stale, [], 'documents still naming the old product');
 });
 
+// #39: the music-video module was the one serving file the rename never reached, so its user agent and
+// its "turn on a password first" help text still introduced the product by the old name - one string
+// IMVDb's operators read and several a viewer reads. The module is shared rather than brand-only (L1),
+// so nothing but a test keeps it renamed.
+test('the music-video module introduces the product by its own name', () => {
+  const src = read('src/imvdb.js');
+  assert.deepEqual(src.replace(OWNED, '').match(/wbtv/i), null, 'no old name left in src/imvdb.js');
+  assert.match(src, /const UA = 'Videodyne \(\+https:\/\/github\.com\/seven-lynx\/Videodyne\)'/,
+    'the user agent points at the fork that sends it');
+});
+
 test('a stored theme, filter and fullscreen choice survives the renamed keys', () => {
   const html = read('public/index.html');
   assert.match(html, /getItem\("videodyne-theme"\) \|\| localStorage\.getItem\("wbtv-theme"\)/,

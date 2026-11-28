@@ -1,5 +1,5 @@
 {
-  "name": "wbtv",
+  "name": "videodyne",
   "version": "0.9.3",
   "description": "Self-hosted EPG / fake-live-TV for your own media library",
   "type": "module",
