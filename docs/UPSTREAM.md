@@ -27,11 +27,15 @@ Only the third row can shrink, which is why it is the interesting one.
 `Status` is one of `candidate` (could be sent), `queued` (a pull request is already open - one at a
 time), `drafted` (text ready, not sent), `open`, `merged`, `declined`, or `not-sent` with the
 reason beside it.
+`Link` names one tracker and never leaves the reader to guess which: a bare `#18` is this fork's
+issue, and the author's repository is always written `upstream#4`. A row whose offer was closed
+without merging says `declined` and keeps the number, because the change itself stays in the tree -
+`c1190be` is the first one (#22, #61).
 
 | Date | Commit | Lane | What | Upstream | Status | Link |
 |---|---|---|---|---|---|---|
-| 2026-11-22 | `c1190be` | upstream | Untrack `tools/__pycache__/*.pyc` and add the ignore rule | yes | open | #3 |
-| 2026-11-22 | - | upstream | Hardware-encoder results from a real GPU, for the open help-wanted issue | yes | candidate | - |
+| 2026-11-22 | `c1190be` | upstream | Untrack `tools/__pycache__/*.pyc` and add the ignore rule | yes | declined | upstream#3 (the author closed the pull request unmerged on 2026-11-26, so the ignore rule stays a fork change until `tools/` is offered again with something he wants) |
+| 2026-11-22 | - | upstream | Hardware-encoder results from a real GPU, for the open help-wanted issue | yes | candidate | upstream#1 |
 | 2026-11-22 | `99487f8` | upstream | Test the migration path: an old-shaped database gains every column `migrate()` adds, and the old `libraries` CHECK is rebuilt | yes | candidate | #18 |
 | 2026-11-23 | `0468867` | upstream | Test the access gate: the 401 challenge, the three ways an API key is presented, the signed cookie and its expiry, and that deleting the password opens the app again | yes | candidate | #17 |
 | 2026-11-23 | `5fbc835` | upstream | Build the three columns that lived only in `migrate()` into `SCHEMA`, so a fresh database is correct without it; the ALTERs stay as the upgrade path | yes | candidate | #2 |
