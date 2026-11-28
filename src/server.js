@@ -19,6 +19,7 @@ import { registerImvdb } from './imvdb.js';
 import { ensureSchedule, ensureChannelSchedule, rescheduleFuture } from './scheduler.js';
 import { probePending } from './media.js';
 import { Broadcaster, hideKeys } from './broadcaster.js';
+import { installFatalHandlers } from './fatal.js';
 import { addAdUrls, processAds, removeAd } from './ads.js';
 import { initAuth } from './auth.js';
 import { logoFile, saveLogo, removeLogo, MIME } from './logos.js';
@@ -498,10 +499,13 @@ app.register(fastifyStatic, { root: path.join(root, 'node_modules/hls.js/dist'),
 // ---------------------------------------------------------------- boot
 fs.mkdirSync(cfg.tmpDir, { recursive: true });
 fs.rmSync(path.join(cfg.tmpDir, 'live'), { recursive: true, force: true });
-// A stray error in a timer or background task must not take every stream down with it: log it and keep serving.
-// (Failing to bind the port is different: that really is fatal, so exit and let Docker restart us.)
-process.on('unhandledRejection', (e) => console.error('unhandled rejection (continuing):', e));
-process.on('uncaughtException', (e) => console.error('uncaught exception (continuing):', e));
+// An uncaught exception means the process no longer knows what it is doing, so stop every channel and
+// exit 1: a restart into an empty process is honest, while serving from a half-broken one is not. A
+// rejection from a client that hung up is the one case that is logged and survived - `src/fatal.js`
+// carries the argument. (Failing to bind the port is fatal on its own, below, and needs no teardown:
+// no channel has started yet.)
+const stopAll = () => { for (const b of live.values()) b.stop(); };
+installFatalHandlers({ stop: stopAll });
 try { await app.listen({ port: cfg.port, host: '0.0.0.0' }); } catch (e) { console.error('cannot listen on port', cfg.port, e); process.exit(1); }
 console.log(`Videodyne listening on :${cfg.port}`);
 
@@ -520,6 +524,6 @@ setInterval(() => {
   if (!s.autoScan || scan.running || !hasLibraries()) return;
   if (Date.now() - Math.max(scan.finished, scan.started) >= s.scanIntervalMinutes * 60000) runScan(null, true);
 }, 60000);
-const shutdown = () => { for (const b of live.values()) b.stop(); process.exit(0); };
+const shutdown = () => { stopAll(); process.exit(0); };
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
